@@ -149,7 +149,7 @@ for x in obj:
 он внутри вызывает:
 
 ```
-iterator = iter(obj)
+iterator = iter(obj) # идентично obj.__iter__()
 ```
 
 то есть метод `__iter__()`.
