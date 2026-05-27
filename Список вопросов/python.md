@@ -244,6 +244,8 @@ for x in counter:
 
 Генераторы позволяют экономить память, потому что не хранят все данные сразу.
 
+[Побробно](https://github.com/erohin94/Data-Engineer/blob/main/Python/%D0%93%D0%B5%D0%BD%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80/README.md)
+
 **13. Что такое iterable?**
 
 12.разница iterable и iterator?
