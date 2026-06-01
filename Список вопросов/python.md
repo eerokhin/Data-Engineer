@@ -431,10 +431,14 @@ Lambda-функция — это анонимная функция в Python, к
 
 Пример:
 
+Простое увеличение числа
+
 ```python
 f = lambda x: x + 1
 print(f(5))  # 6
 ```
+
+`sorted()` по возрасту
 
 ```python
 users = [
@@ -445,6 +449,8 @@ sorted_users = sorted(users, key=lambda x: x["age"])
 print(sorted_users) # [{'name': 'Ivan', 'age': 25}, {'name': 'Anna', 'age': 30}]
 ```
 
+`filter()` — только чётные числа
+
 ```python
 nums = [1, 2, 3, 4, 5, 6]
 
@@ -452,12 +458,16 @@ even = list(filter(lambda x: x % 2 == 0, nums))
 print(even)  # [2, 4, 6]
 ```
 
+`map()` — возвести в квадрат
+
 ```python
 nums = [1, 2, 3, 4]
 
 squares = list(map(lambda x: x ** 2, nums))
 print(squares)  # [1, 4, 9, 16]
 ```
+
+pandas `apply`
 
 ```python
 import pandas as pd
