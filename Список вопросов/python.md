@@ -425,18 +425,48 @@ Cat → "Мяу"
 [Базовые понятия ООП](https://github.com/eerokhin/Data-Engineer/blob/main/Python/%D0%9E%D0%9E%D0%9F/README.md#6-%D1%87%D1%82%D0%BE-%D1%82%D0%B0%D0%BA%D0%BE%D0%B5-self)
 
 
+**26. Лямбда функция (что это, зачем, где использовать)?**
 
+Lambda-функция — это анонимная функция в Python, которая используется для простых однострочных выражений. Чаще всего её применяют в функциях высшего порядка, таких как `sorted`, `map`, `filter` или `apply` в pandas, когда нужно быстро передать небольшую логику без объявления отдельной функции через `def`. Если логика сложная, лучше использовать обычную функцию для читаемости.
 
+Пример:
 
+```python
+f = lambda x: x + 1
+print(f(5))  # 6
+```
 
+```python
+users = [
+        {"name": "Anna", "age": 30},
+        {"name": "Ivan", "age": 25}
+        ]
+sorted_users = sorted(users, key=lambda x: x["age"])
+print(sorted_users) # [{'name': 'Ivan', 'age': 25}, {'name': 'Anna', 'age': 30}]
+```
 
+```python
+nums = [1, 2, 3, 4, 5, 6]
 
+even = list(filter(lambda x: x % 2 == 0, nums))
+print(even)  # [2, 4, 6]
+```
 
+```python
+nums = [1, 2, 3, 4]
 
+squares = list(map(lambda x: x ** 2, nums))
+print(squares)  # [1, 4, 9, 16]
+```
 
+```python
+import pandas as pd
+df = pd.DataFrame({"salary": [1000, 2000, 3000]})
+df["salary_k"] = df["salary"].apply(lambda x: x / 1000)
+print(df)
 
-
-
-
-
-
+#     salary  salary_k
+#0    1000       1.0
+#1    2000       2.0
+#2    3000       3.0
+```
