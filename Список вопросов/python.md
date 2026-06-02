@@ -512,3 +512,117 @@ def call_func(f):
   
 call_func(func) # Вывод: I am a function
 ```
+
+**28. Что такое Декоратор?**
+
+<details>
+<summary>Обычный декоратор 1 вариант вызова</summary>
+
+```python
+# Обычный декоратор
+def decorator(func):
+    def wrapper():
+        print("До вызова")
+        func()
+        print("После вызова")
+    return wrapper
+
+@decorator
+def hello():
+    print("Hello")
+
+hello() # Python превращает это в: hello = decorator(hello)
+#До вызова
+#Привет!
+#После вызова
+```
+
+</details>
+
+
+
+
+
+<details>
+<summary>Обычный декоратор 2 вариант вызова</summary>
+
+```python
+# Обычный декоратор - 2 вариант вызова
+def decorator(func):
+    def wrapper():
+        print("До вызова")
+        func()
+        print("После вызова")
+    return wrapper
+
+def hello():
+    print("Hello")
+
+new_hello = decorator(hello) # Передали в декоратор объект функцию
+new_hello()
+#До вызова
+#Привет!
+#После вызова
+```
+
+</details>
+
+
+
+
+<details>
+<summary>Декоратор с параметрами 1 вариант вызова</summary>
+
+```python
+# Декоратор с параметрами
+def decorator(level):
+    def actual_decorator(func):
+        def wrapper():
+            print(f"[{level}]")
+            func()
+        return wrapper
+    return actual_decorator
+
+@decorator("INFO")
+def hello():
+    print("Hello")
+
+hello() # Python превращает это в: hello = decorator("INFO")(hello)
+#[INFO]
+#Hello
+```
+
+</details>
+
+
+
+
+
+<details>
+<summary>Декоратор с параметрами 2 вариант вызова</summary>
+
+```python
+# Декоратор с параметрами - 2 вариант вызова
+def decorator(level):
+    def actual_decorator(func):
+        def wrapper():
+            print(f"[{level}]")
+            func()
+        return wrapper
+    return actual_decorator
+
+def hello():
+    print("Hello")
+
+new_hello = decorator("INFO")(hello) 
+new_hello()
+#[INFO]
+#Hello
+```
+
+</details>
+
+
+
+
+
