@@ -13,7 +13,7 @@ df_resumes_list = pd.DataFrame(resumes_id_list_all, columns=['resume_id', 'owner
 
 ![image](https://github.com/user-attachments/assets/6d9a74e0-9b2a-4427-b8a5-975ca8e1ff52)
 
-```
+```python
 #Получаем список кортежей
 #Кортеж (tuple) — неизменяемый тип данных. my_tuple = (1, 2, 3)
 #Множество (set) — изменяемый тип данных. my_set = {1, 2, 3}
