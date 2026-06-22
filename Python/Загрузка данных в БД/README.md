@@ -2,7 +2,7 @@
 
 Предположим есть датафрейм
 
-```
+```python
 import pandas as pd
 
 resumes_id_list_all = [['aaa111', 111111, 'test1', 'test_11', 10011, 'active', 'data'],  
