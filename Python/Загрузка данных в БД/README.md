@@ -22,9 +22,9 @@ df = df_resumes_list
 tuples = list(set([tuple(x) for x in df.to_numpy()]))
 tuples
 
------------------------------------------------
-[('aaa222', 22222, 'test2', 'test_22', 10012, 'active', 'data2'),
- ('aaa111', 111111, 'test1', 'test_11', 10011, 'active', 'data')]
+
+#[('aaa222', 22222, 'test2', 'test_22', 10012, 'active', 'data2'),
+#('aaa111', 111111, 'test1', 'test_11', 10011, 'active', 'data')]
 ```
 
 ```
