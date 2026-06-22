@@ -27,21 +27,21 @@ tuples
 #('aaa111', 111111, 'test1', 'test_11', 10011, 'active', 'data')]
 ```
 
-```
+```python
 columns = ', '.join(list(df.columns))
----------------
-resume_id, owner_id, url, url_w_contacts, vacancy_code, search_status, t_changed_dttm
+
+#resume_id, owner_id, url, url_w_contacts, vacancy_code, search_status, t_changed_dttm
 ```
 
-```
+```python
 column_cnt = len(df.columns)
---------------------
-7
+
+#7
 ```
 
 Делаем подключение к БД
 
-```
+```python
 import psycopg2
 
 # Подключение к базе данных (параметры подключения нужно заменить на свои)
