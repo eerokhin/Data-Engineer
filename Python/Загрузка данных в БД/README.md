@@ -83,7 +83,7 @@ conn.close()
 INSERT INTO ... VALUES (...);
 INSERT INTO ... VALUES (...);
 ...
--- 10 000 раз
+#И так 10 000 раз
 ```
 
 Итог: 10 000 отдельных запросов.
