@@ -714,3 +714,7 @@ print("Внешний объект после выполения функции"
 - `a` остаётся прежним
 
 </details>
+
+**31. Что такое `super()` и зачем нужен?**
+
+[Про `super()`](https://github.com/eerokhin/Data-Engineer/blob/main/Python/%D0%9E%D0%9E%D0%9F/super().md)
