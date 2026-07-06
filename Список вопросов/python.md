@@ -1138,3 +1138,15 @@ result = func()
 print(result)
 #None
 ```
+
+```python
+class MyStack:
+    def push(self, x):
+        print("Внутри функции", x)
+
+obj = MyStack()
+result = obj.push(5)
+print(result)
+#Внутри функции 5
+#None
+```
