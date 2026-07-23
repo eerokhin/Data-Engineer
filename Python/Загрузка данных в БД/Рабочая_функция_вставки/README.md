@@ -6,7 +6,7 @@
 
 В файле `create_table.py` запросы для создания таблиц, которые вызываются в `main_test.py` циклом.
 
-В файле `insert_in_postgresql.py` две функции для выполнения запросов `sql_query_execute()` и вставки данных в БД `insert_into_hadoop()`.
+В файле `insert_in_postgresql.py` две функции для выполнения запросов `sql_query_execute()` и вставки данных в БД `insert_into_postgre()`.
 
 После запуска в БД появляются две таблицы
 
