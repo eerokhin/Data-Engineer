@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS sbxm_hr.ees_test_table_for_python(
 STORED AS parquet
 ```
 
+Сама функция вставки
 
 ```python
 import pandas as pd
@@ -77,3 +78,12 @@ insert_into_hadoop(df=df, schema="sbxm_hr", table="ees_test_table_for_python", c
 # (2, 'Петр', null, 200000.0, '2026-07-23 22:28:49'), 
 # (3, null, 30.0, null, '2026-07-23 22:28:49')
 ```
+
+Результат
+
+| id | name       |    age |   salary | t_changed_dttm      |
+| -: | :--------- | -----: | -------: | :------------------ |
+|  1 | `O'Reilly` |   25.0 | 150000.5 | 2026-07-23 22:28:49 |
+|  2 | Петр       | `NULL` | 200000.0 | 2026-07-23 22:28:49 |
+|  3 | `NULL`     |   30.0 |   `NULL` | 2026-07-23 22:28:49 |
+
