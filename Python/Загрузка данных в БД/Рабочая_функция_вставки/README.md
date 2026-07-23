@@ -28,7 +28,7 @@ query = "INSERT INTO table_name (col1, col2) VALUES %s"
 execute_values(cursor, query, [('user1', 25), ('user2', 30)])
 ```
 
-Это специальный синтаксис библиотеки psycopg2.extras.execute_values. Она сама разворачивает список в:
+Это специальный синтаксис библиотеки `psycopg2.extras.execute_values`. Она сама разворачивает список в:
 ```
 INSERT INTO table_name (col1, col2) VALUES 
 ('user1', 25),
