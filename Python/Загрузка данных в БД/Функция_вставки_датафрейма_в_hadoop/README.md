@@ -1,5 +1,7 @@
 ## Функция загрузки датафрейма в Hadoop/Impala
 
+Ниже пример нескольких функций загрузки датафрейма в Hadoop/Impala. Оба варианта работают корректно.
+
 **1 Вариант**
 
 Создадим тестовую таблицу в Impala
@@ -114,7 +116,7 @@ def insert_into_hadoop(df, schema, table, connection):
     """
 
     insert_table = f"{schema}.{table}"
-    # cursor = connection.cursor()
+    cursor = connection.cursor()
     def format_value(x):
 
         # NULL
