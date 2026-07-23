@@ -222,7 +222,7 @@ INSERT INTO ... VALUES (...);
 INSERT INTO users (id, name, email) VALUES (2, 'Пётр Смирнов', 'petr@example.com'), (3, 'Ольга Соколова', 'olga@example.com');
 ```
 
-## **Отличие вставки через:**
+**Отличие вставки через:**
 
 ```
 insert_str = f"INSERT INTO {insert_table} ({t_columns}) VALUES %s"
@@ -233,7 +233,7 @@ insert_str = f"INSERT INTO {insert_table} ({t_columns}) VALUES %s"
 insert_str = f"insert into {'insert_table'} ({t_columns}) values{t_values}"
 ```
 
-✅ Первый способ (через %s):
+Первый способ (через `%s`):
 ```
 insert_str = f"INSERT INTO {insert_table} ({t_columns}) VALUES %s"
 ```
@@ -248,7 +248,7 @@ insert_str = f"INSERT INTO {insert_table} ({t_columns}) VALUES %s"
 execute_values(cursor, insert_str, t_values)
 ```
 
-✅ Преимущества:
+Преимущества:
 
 -Безопасность: защита от SQL-инъекций.
 
@@ -256,7 +256,7 @@ execute_values(cursor, insert_str, t_values)
 
 -Правильная экранизация: спецсимволы, кавычки, даты и т.д.
 
-🚫 Второй способ (небезопасный, вручную подставленные значения):
+Второй способ (небезопасный, вручную подставленные значения):
 
 ```
 insert_str = f"INSERT INTO {'insert_table'} ({t_columns}) VALUES{t_values}"
@@ -268,7 +268,7 @@ insert_str = f"INSERT INTO {'insert_table'} ({t_columns}) VALUES{t_values}"
 t_values = "(1, 'Alice'), (2, 'Bob')"
 ```
 
-❗ Минусы:
+Минусы:
 
 -Уязвимость к SQL-инъекциям, если значения приходят откуда-то извне.
 
