@@ -22,7 +22,7 @@
 
 ## **Что значит VALUES `%s`?**
 
-Когда используется VALUES %s в таком виде:
+Когда используется `VALUES %s` в таком виде:
 ```
 query = "INSERT INTO table_name (col1, col2) VALUES %s"
 execute_values(cursor, query, [('user1', 25), ('user2', 30)])
