@@ -21,3 +21,16 @@
    Windows / Linux: `Ctrl + /`
 
    Jupyter автоматически добавит `#` в начале каждой строки.
+
+5) **Скачать полностью папку из JupyterHub**
+
+```python
+import shutil
+
+shutil.make_archive("project_backup","zip","project")
+```
+Означает:
+
+- `"project_backup"` → имя создаваемого архива (получится `project_backup.zip`)
+- `"zip"` → формат архива
+- `"project"` → папка, которую нужно запаковать
