@@ -17,6 +17,7 @@
 - [Параметры DAG](#Параметры-DAG)
   - [Основные параметры](#Основные-параметры)
   - [Макросы для schedule_interval](#Макросы-для-schedule_interval)
+-[BashOperator](#BashOperator)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -442,3 +443,169 @@ with DAG(
 | `@yearly` | Запуск один раз в год в полночь 1 января |
 
 </details>
+
+## BashOperator
+
+Создадим DAG, который будет выводить в командной строке: "Привет тест! Это тестовый даг!"
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.utils.dates import days_ago
+from datetime import datetime
+ 
+default_args = {
+    'owner': 'eerokhin',
+    'start_date': days_ago(1),
+    'retries': 1,
+    'catchup': False
+}
+ 
+dag = DAG(
+    dag_id="hello_eerokhin",
+    start_date=datetime(2026, 7,1),
+    schedule_interval=None,
+    tags=['eerokhin'],
+    default_args=default_args
+)
+ 
+hello_rm = BashOperator(
+    task_id="hello_rm", 
+    bash_command='echo "Привет тест! Это тестовый даг!"', 
+    dag=dag
+)
+ 
+hello_rm
+```
+
+</details>
+
+Посмотрим на оператор и его основные параметры:
+
+```python
+BashOperator(
+    task_id="hello_rm", 
+    bash_command='echo "Привет тест! Это тестовый даг!"', 
+    dag=dag
+)
+```
+
+`task_id` – это уникальное имя таски, в одном DAG-файле оно должно быть уникальным.
+
+`bash_command` – команда Bash, которую необходимо выполнить.
+
+А теперь ненадолго вернёмся к теме параметров самого `DAG'а`.
+
+Обращаю внимание на параметр `start_date`!
+
+Он указан у меня и в классе DAG, и в словаре `default_args`, но Airflow не конфликтует. Это связано с тем, что `default_args` – это аргументы по умолчанию, а аргументы, указанные в классе DAG, – это реальные аргументы, с которыми запускается сам DAG. Поэтому одинаковые параметры, описанные в классе DAG, всегда перекрывают значения из словаря. В нашем случае DAG возьмёт стартовую дату с `01-07-2026`.
+
+Также обращаю внимание на параметр `catchup`!
+
+В нашем словаре он указан как `False`. Это необходимо для того, чтобы наш DAG запустился только один раз. В противном случае DAG будет запущен для всех дат, начиная с `01-07-2026`!
+
+Также DAG выполнится один раз, если `schedule_interval` равен `None`, т.е. при ручном запуске.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.utils.dates import days_ago
+from datetime import datetime
+ 
+default_args = {
+    'owner': 'eerokhin',
+    'start_date': days_ago(1),
+    'retries': 1,
+}
+ 
+dag = DAG(
+    dag_id="hello_eerokhin",
+    start_date=datetime(2026, 7,1),
+    schedule_interval="0 4 * * *",
+    tags=['eerokhin'],
+    default_args=default_args
+)
+ 
+hello_rm = BashOperator(
+    task_id="hello_rm", 
+    bash_command='echo "Привет тест! Это тестовый даг! Дата запуска {{ ds }}"', 
+    dag=dag
+)
+ 
+hello_rm
+```
+
+</details>
+
+
+Анализируя скрипт, наверняка заметил конструкцию типа `{{ ds }}` – это специальная конструкция, её ещё называют `Jinja` (фреймворк шаблонов на Python).
+
+`Jinja` даёт приятную "магию" при работе с AirFlow, но это не более чем удобный бонус, а основной фреймворк AirFlow всё равно остаётся главным инструментом.
+
+Давай рассмотрим пример работы следующего шаблона. Допустим, нам необходимо пройтись по циклу и в Bash-команду подставлять определённые значения.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.utils.dates import days_ago
+from datetime import datetime
+ 
+default_args = {
+    'owner': 'eerokhin',
+    'start_date': days_ago(1),
+    'retries': 1,
+}
+ 
+with DAG(
+    dag_id="jinja_for_example",
+    schedule_interval=None,
+    tags=['eerokhin'],
+    default_args=default_args
+) as dag:
+ 
+    process_tables = BashOperator(
+        task_id="process_tables",
+        bash_command="""
+            {% for table in ['users', 'orders', 'payments'] %}
+            echo "Обрабатываю {{ table }}"
+            {% endfor %}
+        """
+    )
+```
+
+</details>
+
+По итогу должно получиться:
+
+<img width="1467" height="345" alt="image" src="https://github.com/user-attachments/assets/41c911f4-7131-4014-8e9b-f9835be8a8bd" />
+
+Скрипт, описанный в DAG'е:
+
+```python
+{% for table in ['users', 'orders', 'payments'] %}
+   echo "Обрабатываю {{ table }}"
+{% endfor %}
+```
+
+для командной строки превращается в три последовательные друг за другом команды:
+
+```python
+echo "Обрабатываю users"
+echo "Обрабатываю orders"
+echo "Обрабатываю payments"
+```
+
+Где это может применяться? Например, при передаче параметра даты `{{ ds }}` для выкачивания данных из API за определённый день.
+
+Существует достаточно много зарезервированных Jinja-шаблонов, встроенных в AirFlow, но их поиск и разбор остаётся на вашей ответственности.
+
+В ходе обучения мы не раз ещё будем ссылаться на Jinja, так что особо волноваться не стоит — всё постепенно разберём.
