@@ -17,7 +17,7 @@
 - [Параметры DAG](#Параметры-DAG)
   - [Основные параметры](#Основные-параметры)
   - [Макросы для schedule_interval](#Макросы-для-schedule_interval)
--[BashOperator](#BashOperator)
+- [BashOperator](#BashOperator)
 
 ## Основные компоненты пользовательского интерфейса
 
