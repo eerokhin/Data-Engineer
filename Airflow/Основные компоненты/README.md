@@ -22,6 +22,7 @@
 - [Кастомный Operator](#Кастомный-Operator)
 - [Строим DAG из операторов. Последовательность задач](#строим-dag-из-операторов-последовательность-задач)
 - [Группировка тасок (TaskGroup)](#группировка-тасок-taskgroup)
+- [Первая полноценная задача](#Первая-полноценная-задача)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -815,3 +816,239 @@ with DAG(
 
 При этом время от времени мы будем возвращаться к базовым темам и полезным лайфхакам!
 
+## Первая полноценная задача
+
+Бизнес-задача: первичная выгрузка и контроль данных из внешнего API.
+
+Представим себе: компания использует внешний сервис (партнёрский или публичный), который предоставляет данные через REST API. Эти данные в дальнейшем:
+
+- используются аналитиками,
+- загружаются в DWH,
+- участвуют в отчётности и витринах.
+
+Перед тем как данные попадут в хранилище, необходимо посмотреть что за данные, провести небольшую валидацию этих данных.
+
+Необходимо разработать DAG в Airflow, который:
+
+- Регулярно выгружает данные из внешнего `API(https://jsonplaceholder.typicode.com/)`
+- Сохраняет «сырые» данные в файловом виде в каталог `/tmp/eerokhin/...`
+- Выполняет первичную проверку объёма данных (подсчитываем количество файлов и количество строк в них; должно выполняться параллельно для каждого файла).
+
+Небольшие условности на данном этапе:
+
+- У нас будет строго два файла
+- Напишем две задачи, которые будут считать количество строк в своих файлах (`data_part_1`, `data_part_2`)
+- Максимальное количество строк в файле равно `60`
+- Если файлы с таким именем существуют, то их перезаписываем
+- API даёт выгрузить одновременно `100` строк по умолчанию
+
+Для первой полноценной задачи такое условие подходит идеально!
+
+Ниже представлен ход решения.
+
+Первое, с чего начинаем, это выгрузка данных из API и сохранение данных в файлы.
+
+1. В файле объявим две константные переменные
+
+```
+DATA_DIR = "/tmp/eerokhin/api_data"
+URL = "https://jsonplaceholder.typicode.com/posts"
+```
+
+2. Запрашиваем данные из API, преобразуем выгруженные данные в `JSON`, делим данные на блоки по `60` строк и сохраняем их в каталог, предварительно создав его. Весь код оборачиваем в функцию.
+
+Ниже представлен код с пояснениями к каждой строчке.
+
+!ВАЖНО! Код с комментариями, объясняющими происходящее. Не нужно заучивать каждый шаг, метод или функцию. При необходимости всегда можно загуглить нужный метод или функцию. Со временем часто используемые функции и методы будут запоминаться автоматически и работать на "машинальном уровне".
+
+```python
+import requests
+import json
+import os
+import math
+ 
+def extract_and_split():
+    
+    response = requests.get(URL) ## Считываем данные из файла
+    data = response.json() ## Переводим данные в формат JSON
+ 
+    os.makedirs(DATA_DIR, exist_ok=True) ## Создаем каталог /tmp/eerokhin/api_data
+ 
+    chunk_size = 60 ## объявляем количество строк в одном блоке (чанке) данных
+    total_rows = len(data) ## У нас JSON формата [{...},{...},{...}] получаем количество {...} оно по умолчанию равно 100
+    total_files = total_rows // chunk_size ## получаем количество файлов при целочисленном делении 100//60 = 2
+ 
+    for i in range(total_files): ## проходимся дважды по циклу. Не забываем, что range начинает счёт с нуля
+        chunk = data[i * chunk_size:(i + 1) * chunk_size] ## берем определенный кусок данных
+        file_path = f"{DATA_DIR}/data_part_{i + 1}.json" ## формируем каталог
+ 
+        with open(file_path, "w", encoding="utf-8") as f: ## создаем файл и записываем в него данные
+            json.dump(chunk, f, ensure_ascii=False) ## сериализуем наш JSON
+ 
+        print(f"Создан файл {file_path}") ## логируем информацию о сохранении файла
+```
+
+Оператор в DAG’е будет вызваться следующим образом:
+
+```python
+extract_api = PythonOperator(
+        task_id="extract_and_split",
+        python_callable=extract_and_split
+    )
+```
+
+3. Пишем функцию, которая подсчитывает количество строк данных в файле.
+   
+С учетом наших условностей мы знаем, что у нас есть два файла: `data_part_1` и `data_part_2`. Нам необходимо создать `2` параллельные таски, которые будут подсчитывать количество строк в каждом файле.
+
+Писать две одинаковые функции с разницей только в имени файла для каждой таски — нерационально. В параметр `python_callable` передаётся исключительно имя функции без аргументов. Но как же передать аргументы?
+
+Разработчики `PythonOperator` позаботились об этом с помощью двух параметров:
+
+- `op_args` — передача списка позиционных аргументов
+- `op_kwargs` — передача словаря именованных аргументов
+
+Проще говоря, это обычные `args` и `kwargs` Python.
+
+Для примера в одной таске мы будем использовать `op_args`, а в другой — `op_kwargs`.
+
+```python
+def count_rows(file_name): ## Объявляем функции с одним параметром имени файла
+    file_path = f"{DATA_DIR}/{file_name}" ## формируем строку
+ 
+    with open(file_path, "r", encoding="utf-8") as f: ## открываем наш файл на чтение
+        data = json.load(f) ## считываем JSON, хранящийся внутри файла
+ 
+    print(f"Файл {file_name}: {len(data)} строк") ## Выводим информацию о кол-ве строк
+```
+
+Операторы объявляем следующим образом:
+
+```python
+count_rows_1 = PythonOperator(
+    task_id="count_rows_file_1",
+    python_callable=count_rows,
+    op_args=["data_part_1.json"]
+)
+ 
+count_rows_2 = PythonOperator(
+    task_id="count_rows_file_2",
+    python_callable=count_rows,
+    op_kwargs={"file_name":"data_part_2.json"}
+)
+```
+
+4. И наконец, выполняем задачу по подсчёту количества файлов в каталоге.
+
+В данном случае удобно использовать `BashOperator`. Код будет следующим:
+
+```python
+count_files = BashOperator(
+    task_id="count_files",
+    bash_command=f"ls -1 {DATA_DIR} | wc -l" ## каталог передаем через f-строку
+)
+```
+
+По итогу получается следующий DAG:
+
+<details>
+<summary>Код</summary>
+
+```python
+"""
+## **First real task eerokhin**
+ 
+Этот DAG:
+- выгружает данные из API
+- сохраняет их в файлы
+- параллельно считает количество файлов и количество строк в этих файлах
+ 
+Используется как учебный пример.
+ 
+"""
+ 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.empty import EmptyOperator
+from datetime import datetime
+import requests
+import json
+import os
+ 
+DATA_DIR = "/tmp/api_data"
+URL = "https://jsonplaceholder.typicode.com/posts"
+ 
+def extract_and_split():
+    
+    response = requests.get(URL)
+    data = response.json()
+ 
+    os.makedirs(DATA_DIR, exist_ok=True)
+ 
+    chunk_size = 60
+    total_rows = len(data)
+    total_files = total_rows // chunk_size
+ 
+    for i in range(total_files):
+        chunk = data[i * chunk_size:(i + 1) * chunk_size]
+        file_path = f"{DATA_DIR}/data_part_{i + 1}.json"
+ 
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(chunk, f, ensure_ascii=False, indent=2)
+ 
+        print(f"Создан файл {file_path} с {len(chunk)} строками")
+ 
+def count_rows(file_name):
+    file_path = f"{DATA_DIR}/{file_name}"
+ 
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+ 
+    print(f"Файл {file_name}: {len(data)} строк")
+ 
+with DAG(
+    dag_id="first_task_eerokhin",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"]
+) as dag:
+ 
+    dag.doc_md = __doc__
+ 
+    start = EmptyOperator(task_id="start")
+ 
+    extract_api = PythonOperator(
+        task_id="extract_and_split",
+        python_callable=extract_and_split
+    )
+ 
+    count_files = BashOperator(
+        task_id="count_files",
+        bash_command=f"ls -1 {DATA_DIR} | wc -l"
+    )
+ 
+    count_rows_1 = PythonOperator(
+        task_id="count_rows_file_1",
+        python_callable=count_rows,
+        op_args=["data_part_1.json"]
+    )
+ 
+    count_rows_2 = PythonOperator(
+        task_id="count_rows_file_2",
+        python_callable=count_rows,
+        op_kwargs={"file_name":"data_part_2.json"}
+    )
+ 
+    end = EmptyOperator(task_id="end")
+ 
+    start >> extract_api
+    extract_api >> [count_files, count_rows_1, count_rows_2] >> end
+```
+
+</details>
+
+В самом начале файла находится строка с описанием задания. Конечно, это сделано не просто так — таким образом показывается один из способов документирования DAG'а.
+
+Всегда приятно открыть DAG в UI и сразу видеть, что в нём происходит.
