@@ -679,3 +679,55 @@ hello_task
 Давайте рассмотрим работу DAG на примере и визуализируем последовательность задач с помощью пустых операторов (**`EmptyOperator`**).
 
 **`EmptyOperator`** – это оператор, который ничего не делает, кроме того, что позволяет строить последовательность выполнения задач в DAG.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.empty import EmptyOperator
+from datetime import datetime
+ 
+with DAG(
+    dag_id="example_task_dependencies",
+    start_date=datetime(2026, 8, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=['eerokhin'],
+) as dag:
+ 
+    start = EmptyOperator(task_id="start")
+ 
+    step_1 = EmptyOperator(task_id="step_1")
+    step_2 = EmptyOperator(task_id="step_2")
+ 
+    parallel_1 = EmptyOperator(task_id="parallel_1")
+    parallel_2 = EmptyOperator(task_id="parallel_2")
+    parallel_3 = EmptyOperator(task_id="parallel_3")
+ 
+    join = EmptyOperator(task_id="join")
+ 
+    final_step_1 = EmptyOperator(task_id="final_step_1")
+    final_step_2 = EmptyOperator(task_id="final_step_2")
+ 
+    end = EmptyOperator(task_id="end")
+ 
+    separate_task = EmptyOperator(task_id="separate_task")
+ 
+    start >> step_1 >> step_2
+    step_2 >> [parallel_1, parallel_2, parallel_3]
+    [parallel_1, parallel_2, parallel_3] >> join
+    join >> final_step_1 >> final_step_2 >> end
+    separate_task
+```
+
+</details>
+
+После добавления данного скрипта в AirFlow, можно увидеть следующую картину:
+
+<img width="1476" height="394" alt="image" src="https://github.com/user-attachments/assets/8f6fd8ef-5204-45d9-b750-54b04085a415" />
+
+Обратите внимание на таску `separate_task`. Поскольку она не связана ни с одной другой задачей, она выполняется параллельно с таской `start` и независимо от падения других задач в DAG она завершится успешно, если пользователь явно не прервёт её выполнение.
+
+Возможно, анализируя DAG, появляется вопрос: зачем нужен `EmptyOperator`, если он ничего не делает? На самом деле у него есть важное назначение – группировка задач. В нашем DAG это реализовано через таски `start` и `end`, которые объединяют последовательности задач в логические блоки.
+
