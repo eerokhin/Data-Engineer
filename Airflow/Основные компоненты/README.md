@@ -976,7 +976,7 @@ import requests
 import json
 import os
  
-DATA_DIR = "/tmp/api_data"
+DATA_DIR = "/tmp/eerokhin/api_data"
 URL = "https://jsonplaceholder.typicode.com/posts"
  
 def extract_and_split():
