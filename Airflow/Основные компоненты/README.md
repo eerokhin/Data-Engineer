@@ -21,6 +21,7 @@
 - [PythonOperator](#PythonOperator)
 - [Кастомный Operator](#Кастомный-Operator)
 - [Строим DAG из операторов. Последовательность задач](#строим-dag-из-операторов-последовательность-задач)
+- [Группировка тасок (TaskGroup)](#Группировка-тасок-(TaskGroup))
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -730,4 +731,87 @@ with DAG(
 Обратите внимание на таску `separate_task`. Поскольку она не связана ни с одной другой задачей, она выполняется параллельно с таской `start` и независимо от падения других задач в DAG она завершится успешно, если пользователь явно не прервёт её выполнение.
 
 Возможно, анализируя DAG, появляется вопрос: зачем нужен `EmptyOperator`, если он ничего не делает? На самом деле у него есть важное назначение – группировка задач. В нашем DAG это реализовано через таски `start` и `end`, которые объединяют последовательности задач в логические блоки.
+
+## Группировка тасок (TaskGroup)
+
+Мы вскользь упомянули группировку и разграничение задач с помощью `EmptyOperator`, но это далеко не единственный способ.
+
+В AirFlow существует `TaskGroup`. `TaskGroup` — это логическая группировка задач внутри DAG. Она объединяет несколько тасок в один визуальный блок, при этом не изменяя логику их выполнения.
+
+Взяв предыдущий пример, разобьем задачу на 3 блока:
+
+1. `step_1`, `step_2`
+2. `parallel_1`, `parallel_2`, `parallel_3`, `join`
+3. `final_step_1`, `final_step_2`
+4. `separate_task` пусть будет отдельно задачей
+
+При этом каждый подблок должен начинаться со `start` и заканчиваться `end`.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.task_group import TaskGroup
+from datetime import datetime
+ 
+with DAG(
+    dag_id="taskgroup_example",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=['eerokhin'],
+) as dag:
+ 
+    with TaskGroup("extract") as extract:
+        start = EmptyOperator(task_id="start")
+        step_1 = EmptyOperator(task_id="step_1")
+        step_2 = EmptyOperator(task_id="step_2")
+        end = EmptyOperator(task_id="end")
+ 
+        start>> step_1 >> step_2 >> end
+ 
+    with TaskGroup("transform") as transform:
+        start = EmptyOperator(task_id="start")
+        parallel_1 = EmptyOperator(task_id="parallel_1")
+        parallel_2 = EmptyOperator(task_id="parallel_2")
+        parallel_3 = EmptyOperator(task_id="parallel_3")
+ 
+        join = EmptyOperator(task_id="join")
+        end = EmptyOperator(task_id="end")
+ 
+        start >> [parallel_1, parallel_2, parallel_3] >> join>> end
+ 
+    with TaskGroup("load") as load:
+        start = EmptyOperator(task_id="start")
+        final_step_1 = EmptyOperator(task_id="final_step_1")
+        final_step_2 = EmptyOperator(task_id="final_step_2")
+        end = EmptyOperator(task_id="end")
+ 
+        start>> final_step_1 >> final_step_2 >> end
+ 
+    separate_task = EmptyOperator(task_id="separate_task")
+ 
+    extract >> transform >> load
+    separate_task
+```
+
+</details>
+
+После загрузки получается:
+
+<img width="1476" height="350" alt="image" src="https://github.com/user-attachments/assets/2d204281-c545-4d49-96e9-967e5047507c" />
+
+Специально назвали подгруппы так, чтобы показать пример: первые два шага извлекают данные из источников, параллельные шаги их трансформируют и объединяют, а дальше данные загружаются в наши базы.
+
+Это лишь модель, демонстрирующая возможности AirFlow, даже если цель — просто “навести красоту” визуально.
+
+При этом `TaskGroup` поддерживает вложенность — можно группировать задачи внутри других групп, а не только на уровне DAG.
+
+До этого момента мы рассматривали AirFlow как обычный фреймворк: положил задачу — и она выполняется в назначенное время. Это стандартная практика в большинстве компаний, использующих AirFlow.
+
+Дальше мы углубимся в уникальные возможности AirFlow, заглянем в те места, куда обычно не заглядывают 90% разработчиков, пишущих `DAG’и`.
+
+При этом время от времени мы будем возвращаться к базовым темам и полезным лайфхакам!
 
