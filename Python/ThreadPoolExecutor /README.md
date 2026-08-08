@@ -202,25 +202,16 @@ def worker(name):
 
     # Записываем имя для текущего потока
     thread_local.name = name
-
     time.sleep(1)
-
     # Каждый поток увидит свое имя
     print(f"{name} видит: {thread_local.name}")
-
 
 threads = []
 
 for name in ["Вася", "Петя", "Коля"]:
-
-    thread = threading.Thread(
-        target=worker,
-        args=(name,)
-    )
-
+    thread = threading.Thread(target=worker, args=(name,))
     threads.append(thread)
     thread.start()
-
 
 for thread in threads:
     thread.join()
