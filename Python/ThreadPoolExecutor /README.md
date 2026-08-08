@@ -190,7 +190,84 @@ def worker(name):
 
 `thread_local.name` → получает значение текущего потока
 
-**Пример:**
+**Пример без `threading.local()`:**
+
+```python
+import threading
+import time
+
+name = None
+
+def worker(my_name):
+
+    global name
+
+    # Все потоки записывают значение в ОДНУ переменную
+    name = my_name
+
+    time.sleep(1)
+
+    print(f"{my_name} видит: {name}")
+
+
+threads = []
+
+for person in ["Вася", "Петя", "Коля"]:
+
+    thread = threading.Thread(
+        target=worker,
+        args=(person,)
+    )
+
+    threads.append(thread)
+    thread.start()
+
+
+for thread in threads:
+    thread.join()
+```
+
+Результат может быть:
+
+```text
+Вася видит: Коля
+Петя видит: Коля
+Коля видит: Коля
+```
+
+Почему?
+
+Потому что `name` — **одна общая переменная для всех потоков**.
+
+```text
+                 name
+                  │
+       ┌──────────┼──────────┐
+       ▼          ▼          ▼
+    Поток 1     Поток 2    Поток 3
+       │          │          │
+       └──────────┼──────────┘
+                  │
+            одно общее значение
+```
+
+Например:
+
+```text
+Поток 1 → name = "Вася"
+Поток 2 → name = "Петя"
+Поток 3 → name = "Коля"
+```
+
+Последний поток перезаписал значение:
+
+```text
+name = "Коля"
+```
+
+Поэтому другие потоки могут увидеть `"Коля"`.
+
+**Пример с `threading.local()`:**
 
 ```python
 import threading
@@ -200,18 +277,27 @@ thread_local = threading.local()
 
 def worker(name):
 
-    # Записываем имя для текущего потока
+    # Каждый поток получает свое значение
     thread_local.name = name
+
     time.sleep(1)
-    # Каждый поток увидит свое имя
+
+    # Каждый поток увидит свое значение
     print(f"{name} видит: {thread_local.name}")
+
 
 threads = []
 
 for name in ["Вася", "Петя", "Коля"]:
-    thread = threading.Thread(target=worker, args=(name,))
+
+    thread = threading.Thread(
+        target=worker,
+        args=(name,)
+    )
+
     threads.append(thread)
     thread.start()
+
 
 for thread in threads:
     thread.join()
@@ -233,6 +319,29 @@ for thread in threads:
 Поток Петя → thread_local.name = "Петя"
 
 Поток Коля → thread_local.name = "Коля"
+```
+
+```text
+thread_local - Создаёт специальное хранилище. У каждого потока своё отдельное значение. 
+
+          thread_local
+               │
+       ┌───────┼───────┐
+       │       │       │
+       ▼       ▼       ▼
+     Вася    Петя     Коля
+       │       │       │
+       ▼       ▼       ▼
+     "Вася"  "Петя"  "Коля"
+
+     
+thread_local
+     │
+     ├── Поток Вася → "Вася"
+     │
+     ├── Поток Петя → "Петя"
+     │
+     └── Поток Коля → "Коля"
 ```
 
 В отличие от обычной переменной:
@@ -278,4 +387,5 @@ def get_session():
 `thread_local.session = requests.Session()` → создает `session` именно для текущего потока
 
 `return thread_local.session` → возвращает `session` текущего потока
+
 
