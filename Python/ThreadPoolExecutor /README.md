@@ -154,3 +154,137 @@ print("Поток завершен, продолжаем программу")
 `start()` - Запускает поток. Поток начинает выполняться.
 
 `join()` - Подождать, пока закончит. Останавливает основную программу и ждет, пока поток не завершится.
+
+## threading.local (свои данные для каждого потока)
+
+`threading.local()` нужен, когда у нас много потоков, но каждому потоку нужно хранить **свои собственные данные**, которые не должны смешиваться с данными других потоков.
+
+**Аналогия:** Есть 3 грузчика (потока). У каждого есть свой личный шкафчик. Они могут положить в него вещи с одинаковым названием, но вещи находятся в разных шкафчиках.
+
+```text
+thread_local
+│
+├── Поток 1 → свои данные
+├── Поток 2 → свои данные
+└── Поток 3 → свои данные
+```
+
+**Синтаксис**
+
+```python
+import threading
+
+# Создаем хранилище для данных потоков
+thread_local = threading.local()
+
+def worker(name):
+    # Каждый поток получает свое значение
+    thread_local.name = name
+
+    print(thread_local.name)
+```
+
+`threading.local()` → создает специальное хранилище, где у каждого потока свои значения
+
+`thread_local.name = ...` → записывает значение для текущего потока
+
+`thread_local.name` → получает значение текущего потока
+
+**Пример:**
+
+```python
+import threading
+import time
+
+thread_local = threading.local()
+
+def worker(name):
+
+    # Записываем имя для текущего потока
+    thread_local.name = name
+
+    time.sleep(1)
+
+    # Каждый поток увидит свое имя
+    print(f"{name} видит: {thread_local.name}")
+
+
+threads = []
+
+for name in ["Вася", "Петя", "Коля"]:
+
+    thread = threading.Thread(
+        target=worker,
+        args=(name,)
+    )
+
+    threads.append(thread)
+    thread.start()
+
+
+for thread in threads:
+    thread.join()
+```
+
+Результат:
+
+```text
+Вася видит: Вася
+Петя видит: Петя
+Коля видит: Коля
+```
+
+У каждого потока свое значение:
+
+```text
+Поток Вася → thread_local.name = "Вася"
+
+Поток Петя → thread_local.name = "Петя"
+
+Поток Коля → thread_local.name = "Коля"
+```
+
+В отличие от обычной переменной:
+
+```python
+name = None
+```
+
+которая была бы **одной общей для всех потоков**.
+
+`threading.local()` → дает каждому потоку свое отдельное хранилище данных
+
+`thread_local.name` → значение `name`, принадлежащее текущему потоку
+
+**Частый пример:** хранить отдельный `requests.Session()` для каждого потока.
+
+```python
+import threading
+import requests
+
+thread_local = threading.local()
+
+def get_session():
+
+    if not hasattr(thread_local, "session"):
+        thread_local.session = requests.Session()
+
+    return thread_local.session
+```
+
+Здесь каждый поток при первом вызове `get_session()` создает свою `Session`:
+
+```text
+Поток 1 → thread_local.session → Session №1
+
+Поток 2 → thread_local.session → Session №2
+
+Поток 3 → thread_local.session → Session №3
+```
+
+`hasattr(thread_local, "session")` → проверяет, есть ли у текущего потока уже своя `session`
+
+`thread_local.session = requests.Session()` → создает `session` именно для текущего потока
+
+`return thread_local.session` → возвращает `session` текущего потока
+
