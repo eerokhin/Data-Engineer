@@ -172,66 +172,6 @@ print("Все потоки завершены")
 
 `join()` - Подождать, пока закончит. Останавливает основную программу и ждет, пока поток не завершится.
 
-## ThreadPoolExecutor (параллельные задачи)
-
-**Аналогия:** Есть 5 грузчиков (потоков) и 100 коробок (задач). Даем каждому грузчику по коробке, они работают параллельно. Как только один освободился - берет следующую коробку.
-
-**Синтаксис**
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-# Шаг 1: Создаем пул с 3 рабочими
-with ThreadPoolExecutor(max_workers=5) as executor:
-    # Шаг 2: Отправляем задачи
-    future = executor.submit(функция, аргумент1, аргумент2)
-    result = future.result()
-```
-
-`ThreadPoolExecutor(max_workers=5)` → создает 5 свободных рабочих
-
-`executor.submit()` → отправляет задачу свободному рабочему
-
-`future` → "обещание" что результат будет
-
-`future.result()` → ждет и возвращает результат
-
-
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def my_function(name):
-    return f"Привет, {name}"
-
-# 1. СОЗДАЕМ ПУЛ
-with ThreadPoolExecutor(max_workers=3) as executor:
-    # 2. ОТПРАВЛЯЕМ ЗАДАЧИ
-    future1 = executor.submit(my_function, "Анна")   # запустили
-    future2 = executor.submit(my_function, "Иван")   # запустили
-    future3 = executor.submit(my_function, "Петр")   # запустили
-    
-    # 3. ПОЛУЧАЕМ РЕЗУЛЬТАТЫ
-    result1 = future1.result()  # ждем результат
-    result2 = future2.result()
-    result3 = future3.result()
-    
-    print(result1, result2, result3)
-```
-
-`future` - это "обещание" что результат будет. Как заказ в ресторане: вы сделали заказ (`submit`), получили номерок (`future`), а когда блюдо готово - забираете (`result`).
-
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def work(x):
-    return x * 2
-
-with ThreadPoolExecutor(max_workers=3) as executor:
-    results = [executor.submit(work, i).result() for i in range(5)]
-```
-
 ## threading.Lock (защита счетчика)
 
 **Блокировки - зачем они?**
@@ -665,7 +605,63 @@ if __name__ == "__main__":
 
 `pool.map(func, items)` применяет функцию к каждому элементу из `items`, распределяя работу между процессами в пуле. Контекстный менеджер сам закроет пул и дождётся всех процессов.
 
-## `concurrent.futures`: одинаковый API для потоков и процессов
+## concurrent.futures: одинаковый API для потоков и процессов. ThreadPoolExecutor (параллельные задачи)
+
+**Аналогия:** Есть 5 грузчиков (потоков) и 100 коробок (задач). Даем каждому грузчику по коробке, они работают параллельно. Как только один освободился - берет следующую коробку.
+
+**Синтаксис**
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+# Шаг 1: Создаем пул с 3 рабочими
+with ThreadPoolExecutor(max_workers=5) as executor:
+    # Шаг 2: Отправляем задачи
+    future = executor.submit(функция, аргумент1, аргумент2)
+    result = future.result()
+```
+
+`ThreadPoolExecutor(max_workers=5)` → создает 5 свободных рабочих
+
+`executor.submit()` → отправляет задачу свободному рабочему
+
+`future` → "обещание" что результат будет
+
+`future.result()` → ждет и возвращает результат
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def my_function(name):
+    return f"Привет, {name}"
+
+# 1. СОЗДАЕМ ПУЛ
+with ThreadPoolExecutor(max_workers=3) as executor:
+    # 2. ОТПРАВЛЯЕМ ЗАДАЧИ
+    future1 = executor.submit(my_function, "Анна")   # запустили
+    future2 = executor.submit(my_function, "Иван")   # запустили
+    future3 = executor.submit(my_function, "Петр")   # запустили
+    
+    # 3. ПОЛУЧАЕМ РЕЗУЛЬТАТЫ
+    result1 = future1.result()  # ждем результат
+    result2 = future2.result()
+    result3 = future3.result()
+    
+    print(result1, result2, result3)
+```
+
+`future` - это "обещание" что результат будет. Как заказ в ресторане: вы сделали заказ (`submit`), получили номерок (`future`), а когда блюдо готово - забираете (`result`).
+
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def work(x):
+    return x * 2
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    results = [executor.submit(work, i).result() for i in range(5)]
+```
 
 Модуль `concurrent.futures` даёт высокоуровневую обёртку над обоими подходами. Один и тот же код работает и с потоками, и с процессами, меняется только класс `executor`:
 
