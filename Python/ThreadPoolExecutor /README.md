@@ -62,7 +62,7 @@ with ThreadPoolExecutor(max_workers=3) as executor:
 
 **Блокировки - зачем они?**
 
-Проблема: Когда несколько потоков одновременно меняют одну переменную - может быть хаос.
+Проблема: Потоки делят память. Когда несколько потоков одновременно меняют одну переменную без защиты - может быть хаос, результат непредсказуем (race condition).
 
 ```python
 import threading
@@ -99,6 +99,52 @@ print(counter)  # 10
 `ThreadPoolExecutor` → запускает много задач одновременно
 
 `Lock` → защищает общую переменную от одновременного изменения
+
+Посмотрим: пять потоков увеличивают счётчик по миллиону раз каждый, значит должно получиться `5 000 000`.
+
+```python
+import threading
+
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(1_000_000):
+        counter += 1
+
+threads = [threading.Thread(target=increment) for _ in range(5)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(counter)        # например 3137095 — и при каждом запуске другое число
+```
+
+Ждали `5 000 000`, а получили меньше — и в следующий раз число будет другим. Дело в том, что `counter += 1` не одно действие, а три (прочитать значение, прибавить единицу, записать обратно), и потоки успевают влезть между шагами, затирая чужие инкременты. Защита — `Lock`: пока один поток внутри `with lock`, остальные ждут своей очереди.
+
+```python
+import threading
+
+counter = 0
+lock = threading.Lock()
+
+def increment():
+    global counter
+    for _ in range(1_000_000):
+        with lock:                # автоматический acquire/release
+            counter += 1
+
+threads = [threading.Thread(target=increment) for _ in range(5)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(counter)        # 5000000 — теперь всегда верно
+```
+
+`with lock`: — стандартный способ работы: он гарантирует освобождение блокировки даже при исключении. Кроме `Lock` в `threading` есть `Event`, `Semaphore`, `Condition`, `RLock`. На практике в `90%` случаев хватает `Lock` и `Queue` (см. ниже). Остальное нужно для нетривиальной координации.
 
 ## threading.Thread (ручной поток)
 
