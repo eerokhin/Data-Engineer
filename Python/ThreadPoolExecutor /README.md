@@ -80,7 +80,7 @@ I/O в legacy-коде без async-библиотек	                threading
 
 <img width="725" height="350" alt="image" src="https://github.com/user-attachments/assets/9786cdec-b25f-419d-a85a-bfd7a5ad4b14" />
 
-## threading.Thread (ручной поток)
+## threading.Thread (ручной поток) потоки внутри одного процесса
 
 `threading.Thread` нужен, когда нужно разные задачи выполнять одновременно.
 
@@ -687,6 +687,7 @@ if __name__ == "__main__":
 ```
 
 Это самый практичный способ распараллелить простые задачи. На современных проектах `concurrent.futures` встречается чаще, чем прямые `threading.Thread` или `multiprocessing.Process`.
+
 
 ## Когда что брать
 ```text
