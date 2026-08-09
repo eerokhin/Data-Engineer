@@ -112,7 +112,7 @@ def increment():
     for _ in range(1_000_000):
         counter += 1
 
-threads = [threading.Thread(target=increment) for _ in range(5)]
+threads = [threading.Thread(target=increment) for _ in range(5)] # Создай 5 потоков, каждый из которых при запуске будет выполнять increment
 for t in threads:
     t.start()
 for t in threads:
