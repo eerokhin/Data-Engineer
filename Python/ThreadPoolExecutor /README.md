@@ -13,7 +13,7 @@
     - [multiprocessing: настоящий параллелизм](#multiprocessing-настоящий-параллелизм)
     - [Обмен данными между процессами: Queue](#Обмен-данными-между-процессами-Queue)
     - [Пул процессов для CPU-bound задач](#Пул-процессов-для-CPU-bound-задач)
-    - [concurrent.futures: одинаковый API для потоков и процессов. ThreadPoolExecutor (параллельные задачи)](#concurrentfutures-одинаковый-API-для-потоков-и-процессов-ThreadPoolExecutor-параллельные задачи)
+    - [concurrent.futures: одинаковый API для потоков и процессов. ThreadPoolExecutor (параллельные задачи)](#concurrentfutures-одинаковый-api-для-потоков-и-процессов-threadpoolexecutor-параллельные-задачи)
 
 # Параллельное и асинхронное программирование
 
