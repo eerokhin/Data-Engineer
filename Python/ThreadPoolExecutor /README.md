@@ -936,3 +936,54 @@ run_in_executor(None, func, *args) отдаёт func(*args) в стандарт�
 Для CPU-bound кода можно передать ProcessPoolExecutor первым аргументом — функция уйдёт в отдельный процесс с собственным GIL.
 
 ## async-итерация и контекстные менеджеры
+
+Если объект собирает данные постепенно (через сеть, например), он может быть асинхронным итератором: итерируется через async for:
+
+```python
+async for line in aiohttp_response:
+    process(line)
+```
+
+Если ресурс надо открыть и закрыть асинхронно (соединение с БД), это асинхронный контекстный менеджер через async with:
+
+```python
+async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+        data = await response.json()
+```
+
+Сами вы их пишете редко, это инструменты библиотек (aiohttp, asyncpg, aioredis). Достаточно знать, что они существуют и узнавать async for / async with в чужом коде.
+
+## Сравнение трёх подходов
+
+```text
+                    threading	                multiprocessing	                    asyncio
+Параллелизм CPU	    нет (GIL)	                да	                                нет (1 поток)
+I/O-bound	        хорошо	                    хорошо, но дорого	                отлично
+Накладные расходы	низкие	                    высокие	                            минимальные
+Память	            общая	                    изолированная	                    общая (1 поток)
+Обмен данными	    переменные + Lock / Queue	Queue, Pipe, Manager	            переменные / asyncio.Queue
+Тысячи задач	    плохо	                    очень плохо	                        прекрасно
+```
+
+## Правило выбора:
+
+- Тысячи сетевых соединений, новые проекты → asyncio
+
+- I/O в существующем синхронном коде без async-библиотек → threading или ThreadPoolExecutor
+
+- Тяжёлые вычисления → multiprocessing или ProcessPoolExecutor
+
+- В одном приложении часто всё это сочетается: asyncio как основной слой + run_in_executor с пулом потоков/процессов для блокирующих кусков.
+
+## Несколько подводных камней
+
+- CPU-bound в asyncio убивает event loop. Используйте run_in_executor с ProcessPoolExecutor для тяжёлых вычислений в async-коде.
+
+- Забытая await: asyncio.sleep(1) без await ничего не делает (создаёт корутину и выбрасывает её). В современных IDE это подсвечивается.
+
+- Mix sync/async: вызов requests.get() (синхронный) в asyncio блокирует всё. Используйте aiohttp / httpx для async-HTTP.
+
+- if __name__ == "__main__": на Windows и macOS обязательна для multiprocessing, иначе процессы будут рекурсивно создавать сами себя.
+
+На этом модуль конкурентности завершён. Карта из вводной статьи и матрица выше уже отвечают на вопрос «что брать», а на практике основная программа чаще всего живёт на asyncio, отдавая CPU-тяжёлые куски в process pool через run_in_executor.
