@@ -829,3 +829,110 @@ create_task() сразу планирует корутину к выполнен
 - CPU-bound в asyncio останавливает всё. Считаете долго? Выносите в run_in_executor (следующая статья) или в multiprocessing.
 
 Далее — продвинутые техники asyncio: очереди, синхронизация между корутинами и (главное) как запускать блокирующий код, не убивая event loop.
+
+# Продвинутое асинхронное програмирование
+
+## Продвинутый asyncio в Python
+
+Асинхронный сервис держал тысячи соединений и вдруг замер весь, для всех разом. Причина в одной строке: кто-то вызвал синхронную requests.get(), и она на секунду заблокировала единственный поток event loop, а с ним и все остальные корутины.
+
+Базовых средств asyncio из прошлой статьи (async def, await, gather, Tasks) здесь недостаточно. Для реальных приложений нужны ещё три инструмента: очереди между корутинами, синхронизация и, главное, запуск блокирующего кода без остановки event loop.
+
+## asyncio.Queue: обмен данными между корутинами
+
+В asyncio все корутины работают в одном потоке и в принципе могут делиться состоянием напрямую. Но для производитель-потребитель паттерна удобнее очередь:
+
+```python
+import asyncio
+
+async def producer(q):
+    for i in range(5):
+        await q.put(f"item-{i}")
+        await asyncio.sleep(0.1)
+    await q.put(None)            # сигнал остановки
+
+async def consumer(q):
+    while True:
+        item = await q.get()
+        if item is None:
+            break
+        print(f"Получил {item}")
+
+async def main():
+    q = asyncio.Queue()
+    await asyncio.gather(producer(q), consumer(q))
+
+asyncio.run(main())
+```
+
+API такой же, как у queue.Queue, но методы здесь корутины (await q.put, await q.get). Очередь блокирует на пустом get() или переполненном put() (если задан maxsize), но не сам поток — она уступает управление event loop.
+
+## asyncio.Lock: защита общего состояния
+
+В asyncio переключение корутин происходит только на await. Если между двумя await есть критическая секция (где меняется общее состояние), переключение туда не вклинится. Но если внутри критической секции есть await, другая корутина может вмешаться.
+
+```python
+import asyncio
+
+counter = 0
+lock = asyncio.Lock()
+
+async def increment():
+    global counter
+    async with lock:
+        current = counter
+        await asyncio.sleep(0.01)     # await ВНУТРИ критической секции
+        counter = current + 1
+
+async def main():
+    await asyncio.gather(*(increment() for _ in range(100)))
+    print(counter)        # 100 — корректно благодаря lock
+
+asyncio.run(main())
+```
+
+Без lock несколько корутин прочитали бы одно и то же значение current, и итог был бы меньше 100. С async with lock: только одна корутина может находиться в критической секции одновременно.
+
+В реальном asyncio-коде блокировки нужны редко, потому что большинство переменных живут внутри одной корутины. Lock пригодится, когда несколько корутин читают/пишут одну общую структуру или ресурс — например, общий счётчик активных подключений или кэш.
+
+Кроме Lock есть asyncio.Event, asyncio.Semaphore, asyncio.Condition (API копирует threading, но операции через await).
+
+## Блокирующий код в asyncio: run_in_executor
+
+Вернёмся к аварии из начала главы. Правило, которое там нарушили: в event loop нельзя вызывать блокирующие функции напрямую. time.sleep(2), requests.get(), тяжёлый расчёт останавливают его целиком.
+
+Но иногда деваться некуда: нужна старая синхронная библиотека или CPU-bound расчёт. На этот случай есть loop.run_in_executor(): запустить блокирующую функцию в отдельном потоке (или процессе), пока event loop спокойно продолжает работу.
+
+<img width="775" height="376" alt="image" src="https://github.com/user-attachments/assets/5a8f432a-a2b9-4a41-8cd7-786455031339" />
+
+```python
+import asyncio
+import time
+
+def blocking_io():
+    print("Блокирующая функция: засыпаю на 2с")
+    time.sleep(2)                    # синхронный sleep
+    return "готово"
+
+async def main():
+    loop = asyncio.get_running_loop()
+    print("Запускаем блокирующую задачу в executor")
+
+    # None = executor по умолчанию (ThreadPoolExecutor)
+    future = loop.run_in_executor(None, blocking_io)
+
+    # пока блокирующая задача работает, event loop свободен
+    await asyncio.sleep(1)
+    print("Event loop работает параллельно")
+
+    result = await future
+    print(f"Результат: {result}")
+
+asyncio.run(main())
+```
+
+run_in_executor(None, func, *args) отдаёт func(*args) в стандартный ThreadPoolExecutor (тот самый, что мы видели в статье про потоки и процессы) и возвращает future, который можно await-ить.
+
+Для CPU-bound кода можно передать ProcessPoolExecutor первым аргументом — функция уйдёт в отдельный процесс с собственным GIL.
+
+## async-итерация и контекстные менеджеры
