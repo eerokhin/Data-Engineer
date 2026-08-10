@@ -1279,3 +1279,7 @@ print(stats)
 Изменяем содержимое словаря: `stats["requests"] += 1`. `global` не нужен.
 
 Заменяем сам словарь: `stats = {"requests": 0}`, внутри функции нужен `global`, если хотим заменить глобальный словарь.
+
+**48. Чем поток отличается от процесса?**
+
+[Ссылка](#https://github.com/eerokhin/Data-Engineer/tree/main/Python/concurrency-and-parallelism#%D0%9F%D0%BE%D1%82%D0%BE%D0%BA%D0%B8-%D0%B8-%D0%BF%D1%80%D0%BE%D1%86%D0%B5%D1%81%D1%81%D1%8B-%D0%B2-Python)
