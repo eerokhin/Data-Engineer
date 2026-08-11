@@ -876,8 +876,8 @@ def extract_and_split():
  
     chunk_size = 60 ## объявляем количество строк в одном блоке (чанке) данных
     total_rows = len(data) ## У нас JSON формата [{...},{...},{...}] получаем количество {...} оно по умолчанию равно 100
-    total_files = total_rows // chunk_size ## получаем количество файлов при целочисленном делении 100//60 = 2
- 
+    #total_files = total_rows // chunk_size ## получаем количество файлов при целочисленном делении 100//60 = 2 (целочисленное деление с округлением вниз)
+    total_files = math.ceil(total_rows / chunk_size) ##целочисленного деления с округлением вверх
     for i in range(total_files): ## проходимся дважды по циклу. Не забываем, что range начинает счёт с нуля
         chunk = data[i * chunk_size:(i + 1) * chunk_size] ## берем определенный кусок данных
         file_path = f"{DATA_DIR}/data_part_{i + 1}.json" ## формируем каталог
@@ -975,7 +975,8 @@ from datetime import datetime
 import requests
 import json
 import os
- 
+import math
+
 DATA_DIR = "/tmp/eerokhin/api_data"
 URL = "https://jsonplaceholder.typicode.com/posts"
  
@@ -988,7 +989,8 @@ def extract_and_split():
  
     chunk_size = 60
     total_rows = len(data)
-    total_files = total_rows // chunk_size
+    #total_files = total_rows // chunk_size
+    total_files = math.ceil(total_rows / chunk_size)
  
     for i in range(total_files):
         chunk = data[i * chunk_size:(i + 1) * chunk_size]
@@ -1098,3 +1100,12 @@ print(__doc__)
 <img width="523" height="295" alt="image" src="https://github.com/user-attachments/assets/d4c93099-a8af-4cf0-bc12-8d69a5c5c37c" />
 
 Сама документация выглядит так(DAG Docs):
+
+<img width="1888" height="914" alt="image" src="https://github.com/user-attachments/assets/adda7b24-c9aa-4e51-80de-6e1c270da1d2" />
+
+**Результат**
+
+Результаты можно посмотреть зайдя в лог тасок `count_files`, `count_rows_1`, `count_rows_2`.
+
+
+
