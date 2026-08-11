@@ -1095,6 +1095,6 @@ dag.doc_md = """
 print(__doc__)
 ```
 
-<img width="504" height="295" alt="image" src="https://github.com/user-attachments/assets/a34c87e4-66a5-4ace-a12d-7189b127b991" />
+<img width="523" height="295" alt="image" src="https://github.com/user-attachments/assets/d4c93099-a8af-4cf0-bc12-8d69a5c5c37c" />
 
 Сама документация выглядит так(DAG Docs):
