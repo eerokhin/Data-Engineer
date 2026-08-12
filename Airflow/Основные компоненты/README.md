@@ -1487,7 +1487,21 @@ conn.close()
 
 Если упростить, принцип таков:
 
-Чтобы получить `PostgresHook`, мы используем наследование от `BaseHook`. `BaseHook` берёт по `conn_id` параметры подключения (**Connection**) из AirFlow и на их основе строится строка подключения вида:
+Чтобы получить `PostgresHook`, мы используем наследование от `BaseHook`. 
+
+Упрощённо внутри Airflow:
+
+```python
+from airflow.hooks.base import BaseHook
+
+class PostgresHook(BaseHook):
+
+    ...
+```
+
+`PostgresHook` получает от BaseHook общую функциональность для работы с Airflow Connections.
+
+`BaseHook` берёт по `conn_id` параметры подключения (**Connection**) из AirFlow и на их основе строится строка подключения вида:
 
 `postgresql://user:password@host:5432/dbname`
 
