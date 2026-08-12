@@ -1151,6 +1151,162 @@ URL = "https://jsonplaceholder.typicode.com/posts"
 
 1. Ключа
 2. Значения
-3. 
+
 Также можно добавить комментарий и зашифровать значение.
 
+<img width="1451" height="563" alt="image" src="https://github.com/user-attachments/assets/90c0ecfb-403e-4958-a5d7-32954a45ea4b" />
+
+Ну а теперь сразу к практике.
+
+За основу возьмем предыдущую задачу, разместив каталог и `URL` в `Variables`. Также расчет количества файлов вынесем сразу после записи, а подсчет количества строк объединим в единую `TaskGroup`.
+
+Получается DAG-файл следующего вида:
+
+<details>
+<summary>Код</summary>
+
+```python
+"""
+## **First real task eerokhin**
+ 
+Этот DAG:
+- выгружает данные из API
+- сохраняет их в файлы
+- параллельно считает количество файлов и количество строк в этих файлах
+ 
+Используется как учебный пример.
+"""
+ 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.task_group import TaskGroup
+from airflow.models import Variable
+from datetime import datetime
+import requests
+import json
+import os
+import math
+ 
+DATA_DIR = Variable.get("DATA_DIR")
+URL = Variable.get("URL")
+ 
+def extract_and_split():
+    
+    response = requests.get(URL)
+    data = response.json()
+ 
+    os.makedirs(DATA_DIR, exist_ok=True)
+ 
+    chunk_size = 60
+    total_rows = len(data)
+    total_files = math.ceil(total_rows / chunk_size)
+ 
+    for i in range(total_files):
+        chunk = data[i * chunk_size:(i + 1) * chunk_size]
+        file_path = f"{DATA_DIR}/data_part_{i + 1}.json"
+ 
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(chunk, f, ensure_ascii=False, indent=2)
+ 
+        print(f"Создан файл {file_path} с {len(chunk)} строками")
+ 
+def count_rows(file_name):
+    file_path = f"{DATA_DIR}/{file_name}"
+ 
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+ 
+    print(f"Файл {file_name}: {len(data)} строк")
+ 
+with DAG(
+    dag_id="first_task_eerokhin_var",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"]
+) as dag:
+ 
+    dag.doc_md = __doc__
+ 
+    start = EmptyOperator(task_id="start")
+ 
+    extract_api = PythonOperator(
+        task_id="extract_and_split",
+        python_callable=extract_and_split
+    )
+ 
+    count_files = BashOperator(
+        task_id="count_files",
+        bash_command='ls -1 "{{ var.value.DATA_DIR }}" | wc -l'
+    )
+ 
+    with TaskGroup("count_rows") as count_rows_tg:
+        count_rows_1 = PythonOperator(
+            task_id="count_rows_file_1",
+            python_callable=count_rows,
+            op_args=["data_part_1.json"]
+        )
+        count_rows_2 = PythonOperator(
+            task_id="count_rows_file_2",
+            python_callable=count_rows,
+            op_kwargs={"file_name":"data_part_2.json"}
+        )
+ 
+        count_rows_1 >> count_rows_2
+ 
+    end = EmptyOperator(task_id="end")
+ 
+    (
+       start 
+    >> extract_api 
+    >> count_files
+    >> count_rows_tg 
+    >> end
+    )
+```
+
+</details>
+
+Чтобы пользоваться `Variable`, необходимо выполнить импорт.
+
+```python
+from airflow.models import Variable
+```
+
+В Python получить значение из `Variable` достаточно просто с помощью метода `Variable.get(<имя_переменной>)`.
+
+В нашем случае:
+
+```python
+DATA_DIR = Variable.get("DATA_DIR")
+URL = Variable.get("URL")
+```
+
+Если есть необходимость получить значение из `Variable`, например, в `BashOperator`, то необходимо воспользоваться Jinja-шаблонами и в строку `bash_command` передать:
+
+```python
+"{{ var.value.<имя_переменной> }}"
+```
+
+```python
+count_files = BashOperator(
+    task_id="count_files",
+    bash_command='ls -1 "{{ var.value.DATA_DIR }}" | wc -l'
+)
+```
+
+Обрати внимание на способ задания зависимостей в этом примере.
+
+```python
+(
+    start 
+>> extract_api 
+>> count_files
+>> count_rows_tg 
+>> end
+)
+```
+
+В больших DAG’ах бывает сложно передавать длинные цепочки зависимостей, особенно если использовать одну строку с операторами `>>` или `<<`. Длинная строка становится нечитаемой и нарушает `PEP8` (не более 79–80 символов на строку). Чтобы сделать код аккуратным и читаемым, длинные цепочки зависимостей можно обернуть в скобки `()` — Python будет воспринимать это как единую строку.
