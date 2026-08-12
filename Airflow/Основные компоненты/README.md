@@ -26,6 +26,7 @@
 - [Variable](#Variable)
 - [Connection](#Connection)
   - [HTTP API](#HTTP-API)
+  - [Postgres](#Postgres)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -1568,3 +1569,138 @@ with DAG(
 Вот тут на помощь приходят Connections: они позволяют хранить все эти секреты безопасно и использовать их в DAG’ах без хардкода.
 
 Предлагаю рассмотреть пару часто встречаемых Connections и Hooks, чтобы раз и навсегда закрыть вопросы по их использованию.
+
+### Postgres
+
+Подключение к одной из самых популярных баз данных — PostgreSQL.
+
+Для этого необходимо заполнить параметры `Connection`
+
+Connection Id: source_db
+Connection Type: Postgres
+Description: PostgreSQL DWH
+Host: postgres_dwh
+Database: postgres
+Login: postgres
+Password: postgres
+Port: 5432
+Extra:
+
+Для примера напишем DAG, который подключается к базе данных и выполняет запрос:
+
+Но перед этим создадим тестовую таблицу:
+
+```text
+CREATE SCHEMA analytics;
+
+DROP TABLE IF EXISTS analytics.airflow_test;
+
+CREATE TABLE IF NOT EXISTS analytics.airflow_test (
+    id SERIAL PRIMARY KEY,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO analytics.airflow_test (message)
+VALUES ('DAG успешно подключился к PostgreSQL');
+
+SELECT *
+FROM analytics.airflow_test;
+```
+
+<img width="452" height="49" alt="image" src="https://github.com/user-attachments/assets/98d10d46-db6a-4eb2-bebe-6bd29c6395e8" />
+
+Сам DAG:
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+from datetime import datetime
+
+
+def check_db_connection():
+    hook = PostgresHook(postgres_conn_id="source_db")
+
+    result = hook.get_records("""
+        SELECT *
+        FROM analytics.airflow_test;
+    """) #get_records() выполняет запрос и возвращает результат в логах Airflow.
+
+    print("Результат запроса:")
+    for row in result:
+        print(row)
+
+
+with DAG(
+    dag_id="postgres_PostgresHook",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+
+    extract_task = PythonOperator(
+        task_id="check_db_connection",
+        python_callable=check_db_connection,
+    )
+```
+
+</details>
+
+В логах увидим
+
+<img width="1484" height="521" alt="image" src="https://github.com/user-attachments/assets/dcb97237-181e-4d49-97d6-55cf8dc0e431" />
+
+
+Для примера напишем еще DAG, который подключается к базе данных и выполняет команду:
+
+```python
+SELECT True, 'БД работает';
+```
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from datetime import datetime
+ 
+def check_db_connection():
+    hook = PostgresHook(postgres_conn_id="source_db")
+    
+    hook.run("SELECT True AS status, 'БД работает' AS message;")
+ 
+ 
+with DAG(
+    dag_id="postgres_PostgresHook",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"]
+) as dag:
+ 
+    extract_task = PythonOperator(
+        task_id="check_db_connection",
+        python_callable=check_db_connection
+    )
+ 
+    extract_task
+```
+
+</details>
+
+<img width="1486" height="292" alt="image" src="https://github.com/user-attachments/assets/c12a27cc-f68a-4b09-8ba3-d7bbfad2a2df" />
+
+Ещё одно удобство: Connections можно передавать напрямую в некоторых операторах, например:
+
+- DBTRunOperator
+- SQLExecuteQueryOperator
+
+Для примера выполним тот же запрос к базе данных, используя только SQLExecuteQueryOperator.
