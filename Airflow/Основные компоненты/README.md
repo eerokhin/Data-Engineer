@@ -1704,3 +1704,39 @@ with DAG(
 - SQLExecuteQueryOperator
 
 Для примера выполним тот же запрос к базе данных, используя только SQLExecuteQueryOperator.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from datetime import datetime
+ 
+with DAG(
+    dag_id="check_postgres_connection",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    check_db_connection = SQLExecuteQueryOperator(
+        task_id="check_db_connection",
+        conn_id="source_db",
+        sql="SELECT True AS status, 'БД работает' AS message;",
+        show_return_value_in_logs=True
+    )
+```
+
+</details>
+
+Подводя итог данного подпункта, можно сформулировать так:
+
+- **Connection** — это сохранённые параметры подключения к внешним системам.
+- **Hook** — инструмент, который позволяет использовать эти подключения в коде AirFlow.
+
+Проще говоря:
+
+- **Connection** отвечает за «куда подключаться»,
+- **Hook** отвечает за «что сделать с подключением».
