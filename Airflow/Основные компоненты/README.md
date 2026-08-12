@@ -1499,7 +1499,7 @@ class PostgresHook(BaseHook):
     ...
 ```
 
-`PostgresHook` получает от BaseHook общую функциональность для работы с Airflow Connections.
+`PostgresHook` получает от BaseHook общую функциональность для работы с Airflow Connections и добавляет специфичную логику для PostgreSQL.
 
 `BaseHook` берёт по `conn_id` параметры подключения (**Connection**) из AirFlow и на их основе строится строка подключения вида:
 
@@ -1515,4 +1515,42 @@ class PostgresHook(BaseHook):
 
 Теперь, когда мы разобрались с основами, можно показать, как написать DAG с использованием `HTTPHook` для получения данных из API.
 
+<details>
+<summary>Код</summary>
 
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.providers.http.hooks.http import HttpHook
+from datetime import datetime
+import requests
+ 
+def extract_one_record():
+    hook = HttpHook(method="GET", http_conn_id="api_jsonplaceholder")
+ 
+    response = hook.run("/posts")
+    data = response.json()
+ 
+    first_record = data[0]
+ 
+    print("Первая запись из API:")
+    print(first_record)
+ 
+with DAG(
+    dag_id="http_api_HttpHook",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"]
+) as dag:
+ 
+    extract_task = PythonOperator(
+        task_id="extract_one_record",
+        python_callable=extract_one_record
+    )
+ 
+    extract_task
+```
+
+</details>
