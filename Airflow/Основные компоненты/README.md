@@ -1373,3 +1373,132 @@ DAG знает только `conn_id`, всё остальное — ответ�
 Ну что, когда мы с теорией покончили, предлагаю перейти к практике и "попинать" пару простых примеров. Сейчас посмотрим, как с помощью AirFlow можно получать данные из различных источников.
 
 ### HTTP API
+
+Создаём Connection в UI:
+
+- `Conn Id`: `api_jsonplaceholder`
+- `Conn Type`: `HTTP`
+- `Host`: `https://jsonplaceholder.typicode.com`
+- `Extra`: `{ "timeout": 10 }`
+
+<img width="1871" height="446" alt="image" src="https://github.com/user-attachments/assets/d5ad5fbc-8fb0-4fe1-b622-5708de9161aa" />
+
+Выполнить код
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.hooks.base import BaseHook
+from datetime import datetime
+import requests
+ 
+ 
+def extract_one_record():
+ 
+    conn = BaseHook.get_connection("api_jsonplaceholder") ## Получаем connection по conn_id
+ 
+    print('посмотри сюда ->', conn.host, conn.login, conn.password, conn.extra)
+ 
+    base_url = conn.host ## Берём значение хоста
+ 
+    response = requests.get(f"{base_url}/posts") ## Подставляем значение хоста
+ 
+    data = response.json()
+ 
+    print("Первая запись из API:")
+    print(data[0]) ## Выводим первую запись
+ 
+ 
+with DAG(
+    dag_id="http_api_BaseHook",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"]
+) as dag:
+ 
+    extract_task = PythonOperator(
+        task_id="extract_one_record",
+        python_callable=extract_one_record
+    )
+ 
+    extract_task
+```
+
+</details>
+
+<img width="1485" height="388" alt="image" src="https://github.com/user-attachments/assets/1793a5a2-f50c-482d-9ca3-e268db8e01c4" />
+
+В DAG’е обратим внимание на несколько ключевых строк, а особенно на использование **Hook**:
+
+```python
+from airflow.hooks.base import BaseHook
+ 
+conn = BaseHook.get_connection("api_jsonplaceholder") ## Тут мы получаем объект, содержащий наши креды
+ 
+print('посмотри сюда ->', conn.host, conn.login, conn.password, conn.extra) ## Тут мы вызываем методы с нашими кредами
+```
+
+**Hook** – это способ подключиться к внешней системе через **Connection**. 
+Любое подключение, описанное через **Connection**, должно выполняться через **Hook**. Существует множество различных хуков, например:
+
+1. Базы данных:
+- PostgresHook
+- MySqlHook
+- SqliteHook
+- OracleHook
+- MsSqlHook
+
+2. API и HTTP:
+- HttpHook
+
+3. Облака и хранилища:
+- S3Hook
+- FTPHook
+
+Да, в целом хуков очень много. Для каждого типа подключения к сервису существует свой хук.
+
+Все существующие хуки объединяет самый важный хук — **BaseHook**. Это база, на которой строятся все остальные хуки, позволяющая получить доступ к соединениям (**Connections**) и их параметрам. На его основе можно создавать свои кастомные хуки для любых внешних систем.
+
+Таким образом, **BaseHook** — фундамент для работы с внешними источниками в AirFlow.
+
+Принцип работы очень простой, объясню на «котиках». Самый наглядный пример — подключение к базе данных PostgreSQL.
+
+На обычном Python мы могли бы написать код для подключения к PostgreSQL, используя строку подключения (`connection string`).
+
+```
+import psycopg2
+ 
+conn_str = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@postgres_source:5432/dev'
+ 
+conn = psycopg2.connect(conn_str)
+cursor = conn.cursor()
+ 
+cursor.execute("SELECT 1;")
+print(cursor.fetchone())
+ 
+cursor.close()
+conn.close()
+```
+
+Если упростить, принцип таков:
+
+Чтобы получить `PostgresHook`, мы используем наследование от `BaseHook`. `BaseHook` берёт по `conn_id` параметры подключения (**Connection**) из AirFlow и на их основе строится строка подключения вида:
+
+`postgresql://user:password@host:5432/dbname`
+
+Эта строка позволяет получить объект подключения (`conn`) для работы с базой. В наш `PostgresHook` можно добавить дополнительный функционал по необходимости.
+
+Таким образом и создаются кастомные хуки.
+
+На практике писать свои хуки приходится крайне редко, хотя сделать это достаточно просто.
+
+Мы сознательно не использовали `HttpHook` на первом шаге. Наша задача — понять, как Airflow работает с `Connections` на базовом уровне.
+
+Теперь, когда мы разобрались с основами, можно показать, как написать DAG с использованием `HTTPHook` для получения данных из API.
+
+
