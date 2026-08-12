@@ -1470,7 +1470,7 @@ print('посмотри сюда ->', conn.host, conn.login, conn.password, conn
 
 На обычном Python мы могли бы написать код для подключения к PostgreSQL, используя строку подключения (`connection string`).
 
-```
+```python
 import psycopg2
  
 conn_str = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@postgres_source:5432/dev'
