@@ -27,6 +27,7 @@
 - [Connection](#Connection)
   - [HTTP API](#HTTP-API)
   - [Postgres](#Postgres)
+- [Xcom](#Xcom)
 
 ## Основные компоненты пользовательского интерфейса
 
