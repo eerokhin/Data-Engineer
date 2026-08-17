@@ -28,6 +28,8 @@
   - [HTTP API](#HTTP-API)
   - [Postgres](#Postgres)
 - [Xcom](#Xcom)
+- [Context и Macros](#Context-и-Macros)
+  - [Context](#Context)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -1953,3 +1955,7 @@ generate_value_bash  → пишет XCom: "42"
         │
         └── use_value_2 → читает "42" + НЕ пишет свой результат в XCom
 ```
+
+## Context и Macros
+
+### Context
