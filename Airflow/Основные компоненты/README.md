@@ -1740,3 +1740,215 @@ with DAG(
 
 - **Connection** отвечает за «куда подключаться»,
 - **Hook** отвечает за «что сделать с подключением».
+
+## Xcom
+
+До этого момента мы строили DAG’и, в которых задачи выполнялись независимо друг от друга. Но в реальной жизни так почти не бывает.
+
+Обычно одна задача:
+
+1. получает данные,
+2. другая — обрабатывает,
+3. третья — использует результат.
+
+Чтобы передавать данные между задачами, обычно используют два основных способа:
+
+1. Сохранение промежуточных результатов в хранилище, БД и т.д. (подходит, если необходимо передавать большое количество данных).
+
+2. Использование XCom (обычно применяется для передачи результирующих значений).
+
+Давай рассмотрим простой пример — и сразу всё станет понятно:
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+import random
+ 
+def generate_number():
+    return random.randint(1, 100)
+ 
+def print_number(ti):
+    number = ti.xcom_pull(task_ids="generate_number")
+    print(f"Полученное число: {number}")
+ 
+with DAG(
+    dag_id="xcom_example_simple",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task_generate = PythonOperator(
+        task_id="generate_number",
+        python_callable=generate_number
+    )
+ 
+    task_print = PythonOperator(
+        task_id="print_number",
+        python_callable=print_number
+    )
+ 
+    task_generate >> task_print
+```
+
+</details>
+
+Как можно увидеть, пример максимально простой: функция `generate_number` генерирует число от `1` до `100`, а функция `print_number` выводит это число в лог.
+
+Что в целом происходит:
+
+1. допустим, `generate_number` вернул значение `42`;
+2. Airflow автоматически сохранил его в `XCom`;
+3. `print_number` достал значение через `xcom_pull`.
+
+Важно понимать: если функция имеет `return <значение>`, то это значение автоматически кладётся в `XCom`. Это можно увидеть во вкладке `Admin → XCom`.
+
+<img width="1860" height="332" alt="image" src="https://github.com/user-attachments/assets/49ff4f3d-ea08-49c2-bb7a-4be64e5537fe" />
+
+В `XCom` можно передавать всё что угодно, например:
+
+- строки,
+- списки,
+- словари,
+- JSON,
+- пути к файлам,
+- и т.д.
+
+Но у `XCom` есть одно, но очень важное ограничение — `XCom` НЕ предназначен для больших данных. Это связано с тем, что `XCom` хранится в базе `Airflow`, и, соответственно, большие объёмы могут её перегружать. Также важно не забывать их очищать! (`DAG` для очистки будет приведён в приложении в конце статьи.)
+
+Правильный подход к использованию `XCom` — передавать метаданные, а не сами данные (количество строк, количество файлов, пути к файлам и т.д.).
+
+Мы рассмотрели один из способов передачи значения в `XCom` с помощью `return` — назовём этот способ автоматическим, так как он срабатывает при завершении работы функции.
+
+Но что делать, если нам нужно передать значение в середине функции или вообще передать несколько значений из одной функции?
+На самом деле всё очень просто: это можно сделать в «ручном режиме», самостоятельно задав имя и значение.
+
+Повторим ту же процедуру, что и в прошлом примере, только без `return`.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+import random
+ 
+def generate_number(ti):
+    value_1 = random.randint(1, 100)
+    ti.xcom_push(key="value_1", value=value_1) ## передаем значение в переменную value_1
+ 
+    value_2 = random.randint(1, 100)
+    ti.xcom_push(key="value_2", value=value_2) ## передаем значение в переменную value_2
+ 
+def print_number(ti):
+    number_1 = ti.xcom_pull(task_ids="generate_number", key="value_1") ## забираем значение из переменной value_1
+    number_2 = ti.xcom_pull(task_ids="generate_number", key="value_2") ## забираем значение из переменной value_2
+    print(f"Полученные числа: {number_1} и {number_2}")
+ 
+with DAG(
+    dag_id="xcom_manual_push",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task_generate = PythonOperator(
+        task_id="generate_number",
+        python_callable=generate_number
+    )
+ 
+    task_print = PythonOperator(
+        task_id="print_number",
+        python_callable=print_number
+    )
+ 
+    task_generate >> task_print
+```
+
+</details>
+
+<img width="1908" height="465" alt="image" src="https://github.com/user-attachments/assets/197fc6db-a36f-48a7-ad04-e7a094a1cd6b" />
+
+
+Главное запомнить: если в функциях мы хотим передавать или получать значения из `XCom`, необходимо передавать в функцию параметр объекта `ti`, как в примере с функциями `generate_number(ti)` и `print_number(ti)`.
+
+Для передачи и получения значений используются методы `ti.xcom_push` и `ti.xcom_pull` (`push` и `pull` ассоциируются с `Git`).
+
+Важно понимать, что `XCom` хоть и чаще всего используется в `PythonOperator`, но его можно применять и в других операторах.
+
+Например, в `BashOperator` всё, что выводится в `stdout`, перенаправляется в `XCom`. Также можно передать в оператор параметр `do_xcom_push=True`, чтобы в `XCom` сохранялась последняя строка, выведенная в `stdout`.
+
+Если передать `do_xcom_push=False`, то в `XCom` ничего сохраняться не будет.
+
+Рассмотрим это на примере.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+ 
+with DAG(
+    dag_id="bash_to_bash_xcom",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    ## Тут передаётся значение в XCom
+    generate_value_bash = BashOperator(
+        task_id="generate_value_bash",
+        bash_command='echo "42"',
+        do_xcom_push=True, 
+    )
+ 
+    ## Bash читает XCom через Jinja-шаблон
+    use_value_with_xcom = BashOperator(
+        task_id="use_value_1",
+        bash_command="""
+        echo "Значение из XCom: {{ ti.xcom_pull(task_ids='generate_value_bash') }}". 
+        """, ## последняя строка stdout попадает в XCom
+    )
+ 
+    use_value_without_xcom = BashOperator(
+        task_id="use_value_2",
+        bash_command="""
+        echo "Значение из XCom: {{ ti.xcom_pull(task_ids='generate_value_bash') }}"
+        """,
+        do_xcom_push=False ## отключение записи в XCom
+    )
+ 
+    generate_value_bash >> [use_value_with_xcom, use_value_without_xcom]
+```
+
+</details>
+
+Выполним данный DAG и обратим внимание, из каких тасков значения попадают в XCom, а из каких — нет.
+
+<img width="1878" height="368" alt="image" src="https://github.com/user-attachments/assets/b9705fcb-660d-49ba-bba4-caf6d5ebfe2e" />
+
+`xcom_pull()` → читаем XCom
+
+`do_xcom_push=True` → записываем результат текущего `task` в `XCom`
+
+Поэтому `do_xcom_push=False` не запрещает читать `XCom`. Он только запрещает записывать результат этой задачи в `XCom`.
+
+Итого в DAG:
+
+```text
+generate_value_bash  → пишет XCom: "42"
+        ↓
+        ├── use_value_1 → читает "42" + пишет свой результат в XCom
+        │
+        └── use_value_2 → читает "42" + НЕ пишет свой результат в XCom
+```
