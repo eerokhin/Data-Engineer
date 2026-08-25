@@ -1959,3 +1959,72 @@ generate_value_bash  → пишет XCom: "42"
 ## Context и Macros
 
 ### Context
+
+На данном этапе мы уже стали достаточно уверенными пользователями Airflow.
+
+Но сейчас мы затронем тему, которая одновременно кажется простой, но при этом играет ключевую роль в реальных задачах.
+
+Представим ситуацию: нам нужно каждый день получать данные за вчера из внешнего API.
+Самый очевидный вариант — воспользоваться библиотекой `datetime`.
+
+Но что делать, если сегодня `25.01.2026`, а мы обнаружили, что DAG не отработал `10.01.2026`?
+
+В таком случае нам нужно получить данные не за вчера, а за `09.01.2026` — то есть за дату, связанную с запуском DAG, а не с текущим временем.
+
+Или другой пример.
+
+Допустим, нам нужно записывать логи выполнения задач DAG’ов в базу данных.
+Как в этом случае получить имя текущей таски, идентификатор DAG или дату запуска?
+
+Для решения подобных задач в Airflow существуют два мощных инструмента — **Context** и **Macros**.
+
+**Context** — это словарь, который Airflow передаёт в таску во время выполнения. **Context** содержит метаданные запуска DAG.
+
+В нём хранится вся информация о текущем запуске, например:
+
+- dag
+- task
+- ti (TaskInstance)
+- ds
+- execution_date
+- run_id
+
+Напишем DAG, который покажет, как обращаться к `Context'у` и позволит нам вывести всю информацию, хранящуюся в этой переменной.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+from pprint import pprint
+ 
+def show_context(**context):
+    print("ds =", context["ds"])
+    print("dag_id =", context["dag"].dag_id)
+    print("task_id =", context["task"].task_id)
+    print("run_id =", context["run_id"])
+    print("Вся информация, хранящаяся в Context:")
+    pprint(context)
+ 
+with DAG(
+    dag_id="context_demo",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task = PythonOperator(
+        task_id="show_context",
+        python_callable=show_context,
+    )
+```
+
+</details>
+
+
+Можно не пытаться запомнить всё это наизусть. Это не нужно — просто трата своего времени впустую. Достаточно просто посмотреть на данные.
+
+ВАЖНО! — Airflow автоматически передаёт `context`, если функция принимает его. В нашем примере это выглядит так: `def show_context(**context):`
