@@ -2127,3 +2127,101 @@ with DAG(
 
 
 ## Запуск DAG'а с параметрами
+
+Когда запускал DAG, можно было обратить внимание на ещё одну кнопку — `Trigger DAG /w config`.
+
+Важно: если при нажатии на кнопку запуска (`Trigger DAG`) не появляется выбор из двух кнопок (`Trigger DAG` и `Trigger DAG w/config`), добавь в `docker-compose.yaml` в `environment` веб-сервера `Airflow`:
+
+```
+AIRFLOW__WEBSERVER__SHOW_TRIGGER_FORM_IF_NO_PARAMS: 'true'
+```
+
+После изменения перезапусти `Airflow Webserver` (или подними контейнеры заново), чтобы настройка применилась.
+
+<img width="440" height="114" alt="image" src="https://github.com/user-attachments/assets/388ffd2a-b644-43cb-abb2-7b7ca1b0e836" />
+
+`Trigger DAG /w config` позволяет запускать DAG не только по расписанию, но и с параметрами. Вот примеры, когда данный функционал можно использовать:
+
+- загрузить данные за конкретную дату
+- изменить путь сохранения
+- изменить `chunk_size`
+- включить debug-режим
+- обработать только одну таблицу
+
+Рассмотрим довольно частый бизнес-кейс: иногда нужно загрузить данные не за стандартную дату.
+Возьмём предыдущий DAG и улучшим его так, чтобы можно было передать любую дату и создать каталог именно с этой датой.
+
+<details>
+<summary>Код</summary>
+
+```python
+"""
+Пример конфига:
+```json
+{
+"date": "2026-01-01"
+}
+ 
+"""
+ 
+ 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+import os
+ 
+def create_dir(**context):
+    conf = context["dag_run"].conf or {} ## защита для запуска без конфига
+    custom_date = conf.get("date", context["ds"]) ## conf.get – позволяет взять значение передаваемого параметра "date", в случае его отсутствия берется context["ds"]
+ 
+    path = f"/tmp/eerokhin/data/{custom_date}"
+    os.makedirs(path, exist_ok=True)
+    print(f"Создан каталог: {path}")
+ 
+with DAG(
+    dag_id="context_macros_conf_example",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    dag.doc_md = __doc__
+ 
+    create_folder = PythonOperator(
+        task_id="create_folder",
+        python_callable=create_dir,
+    )
+ 
+    ## для получения параметра используем Jinja { dag_run.conf.get('date', ds) }}
+    show_path = BashOperator(
+        task_id="show_path",
+        bash_command="""
+        echo "Дата запуска: {{ ds }}"
+        cd /tmp/eerokhin/data/{{ dag_run.conf.get('date', ds) }} && pwd
+        """
+    )
+ 
+    create_folder >> show_path
+```
+
+</details>
+
+Для передачи необходимо вставить параметры в JSON-формате (описанные в комментарии к DAG) в соответствующую ячейку.
+
+<img width="1869" height="115" alt="image" src="https://github.com/user-attachments/assets/42df5f37-2c57-49e5-9041-03592e0104eb" />
+
+<img width="1076" height="929" alt="image" src="https://github.com/user-attachments/assets/4c789e2a-c069-420d-b123-cd3ce986207b" />
+
+И запускаем DAG – кнопка `Trigger`
+
+Посмотрим на результаты `BashOperator'а` при запуске без параметра и с параметром.
+
+**Без параметра**
+
+<img width="1479" height="313" alt="image" src="https://github.com/user-attachments/assets/12467b65-d6ef-44c0-8a85-38320b94226e" />
+
+**С параметром**
+
+<img width="1478" height="319" alt="image" src="https://github.com/user-attachments/assets/9715fa13-138a-4834-a5ac-597cfcfcdb4c" />
