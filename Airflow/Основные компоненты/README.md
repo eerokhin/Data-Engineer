@@ -35,6 +35,9 @@
 - [Trigger Rules](#Trigger-Rules)
   - [Основные Trigger Rules](#Основные-Trigger-Rules)
 - [Retries / SLA / Callbacks](#retries--sla--callbacks)
+  - [Retries](#Retries)
+  - [SLA](#SLA)
+  - [Callbacks](#Callbacks)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -2332,3 +2335,121 @@ with DAG(
 
 ## Retries / SLA / Callbacks
 
+**Retries / SLA / Callbacks** — обычные параметры, передаваемые в операторах. Их достаточно часто используют в реальных пайплайнах, в случаях:
+
+- API может временно не отвечать,
+- база может быть недоступна,
+- таска может упасть из-за сети,
+- бизнес требует SLA: «данные должны быть готовы до 09:00»,
+- нужно уведомлять о сбоях.
+
+### Retries
+
+Идея передачи параметра `retries` в том, что если задача упала, Airflow попробует выполнить её ещё раз.
+
+Примеры бизнес-кейсов:
+
+- Мы обращаемся к API, которое иногда падает.
+- Теряется соединение с базой данных.
+
+Чаще к `retries` добавляют параметр `retry_delay` — время ожидания перед повторным запуском. `retries` принимает целое число, `retry_delay` — тип `timedelta` (не забудьте его импортировать).
+
+Пример DAG:
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import random
+ 
+def unstable_task():
+    if random.random() < 0.7:
+        raise Exception("API временно недоступно")
+    print("Успешный запрос")
+ 
+default_args = {
+    "retries": 3, ## 3 попытки перезапустить DAG
+    "retry_delay": timedelta(seconds=10), ## между попытками ждем 10 секунд
+}
+ 
+with DAG(
+    dag_id="retries_example",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    default_args=default_args,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task = PythonOperator(
+        task_id="unstable_task",
+        python_callable=unstable_task,
+    )
+```
+
+</details>
+
+В случае, если `random.random() < 0.7`, таска получает статус `up_for_retry`.
+
+<img width="1119" height="297" alt="image" src="https://github.com/user-attachments/assets/8879a761-8dd2-4eca-94f0-d38dbb1298fc" />
+
+### SLA
+
+**SLA** — это «дедлайн» задачи. Если таска не завершилась вовремя, Airflow отправляет сигнал.
+
+```text
+0 сек ─────────────────────────────── 60 сек
+       ↑                             ↑
+     SLA=7 сек                    задача закончилась
+       │
+       └── SLA нарушен
+```
+
+После того как задача превысит `SLA`, Airflow фиксирует `SLA miss`.
+
+При этом:
+
+- задача не будет остановлена через 7 секунд;
+- задача не станет failed;
+- Airflow не убьёт процесс;
+- задача продолжит выполняться;
+- после завершения будет зафиксировано нарушение SLA.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import time
+ 
+def slow_task():
+    time.sleep(60)
+    print("Задача выполнена")
+ 
+with DAG(
+    dag_id="sla_example",
+    start_date=datetime(2026, 1, 24),
+    schedule_interval="@daily",
+    catchup=True,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task = PythonOperator(
+        task_id="slow_task",
+        python_callable=slow_task,
+        sla=timedelta(seconds=7), ## Задаем SLA
+    )
+```
+
+</details>
+
+Увидеть нарушение SLA можно в **Browse → SLA Misses**
+
+Если ты запускаешь этот DAG через кнопку `Trigger DAG`, то именно поэтому в `Browse → SLA Misses` ничего не появляется.
+
+В Airflow 2.10.5 SLA не проверяется для `manually triggered DAG runs`. Проверка SLA выполняется для `scheduled runs`.
