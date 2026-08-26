@@ -30,6 +30,8 @@
 - [Xcom](#Xcom)
 - [Context и Macros](#Context-и-Macros)
   - [Context](#Context)
+  - [Macros](#Macros)
+- [Запуск DAG'а с параметрами](#Запуск-DAG-а-с-параметрами)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -2028,3 +2030,100 @@ with DAG(
 Можно не пытаться запомнить всё это наизусть. Это не нужно — просто трата своего времени впустую. Достаточно просто посмотреть на данные.
 
 ВАЖНО! — Airflow автоматически передаёт `context`, если функция принимает его. В нашем примере это выглядит так: `def show_context(**context):`
+
+### Macros
+
+**Macros** — это шаблонные переменные Airflow, которые можно использовать в Jinja.
+
+Например:
+
+```python
+- {{ ds }}
+- {{ ds_nodash }}
+- {{ run_id }}
+- {{ dag.dag_id }}
+- {{ task.task_id }}
+```
+
+По сути `Macros` — это то же самое, что и `Context`, но в формате шаблонов. `Jinja-шаблон`, в отличие от контекста, можно передавать в команды многих операторов, например в `BashOperator`.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+ 
+with DAG(
+    dag_id="macros_demo",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    bash_task = BashOperator(
+        task_id="show_macros",
+        bash_command="""
+        echo "ds = {{ ds }}"
+        echo "ds_nodash = {{ ds_nodash }}"
+        echo "dag_id = {{ dag.dag_id }}"
+        echo "task_id = {{ task.task_id }}"
+        echo "run_id = {{ run_id }}"
+        """
+    )
+```
+
+</details>
+
+
+Немного другими словами.
+
+`Context` — это Python-уровень Airflow. `Macros` — это Jinja-уровень Airflow.
+
+Представим задачу:
+
+Нужно сохранять файлы в каталог, зависящий от даты запуска DAG.
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+import os
+ 
+def create_dir(**context):
+    ds = context["ds"] ## присваиваем переменной ds значение контекста `ds`
+    path = f"/tmp/eerokhin/data/{ds}"
+    os.makedirs(path, exist_ok=True)  ## если каталог существует, то ошибки не будет
+    print(f"Создан каталог: {path}")
+ 
+with DAG(
+    dag_id="context_macros_case_1",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    create_folder = PythonOperator(
+        task_id="create_folder",
+        python_callable=create_dir,
+    )
+    ## переходим в созданный каталог и выводим полный путь, в каком каталоге находимся
+    show_path = BashOperator(
+        task_id="show_path",
+        bash_command='cd /tmp/eerokhin/data/{{ ds }} && pwd' ## передаем значение даты через макрос
+    )
+ 
+    create_folder >> show_path
+```
+
+</details>
+
+
+## Запуск DAG'а с параметрами
