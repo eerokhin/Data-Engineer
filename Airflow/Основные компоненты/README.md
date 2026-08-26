@@ -2453,3 +2453,19 @@ with DAG(
 Если ты запускаешь этот DAG через кнопку `Trigger DAG`, то именно поэтому в `Browse → SLA Misses` ничего не появляется.
 
 В Airflow 2.10.5 SLA не проверяется для `manually triggered DAG runs`. Проверка SLA выполняется для `scheduled runs`.
+
+### Callbacks
+
+**Callbacks** — это функции, которые вызываются:
+
+- при успехе
+- при ошибке
+- при ретрае
+- при SLA нарушении
+
+| Callback | Когда вызывается |
+|---|---|
+| `on_success_callback` | Задача успешно завершилась |
+| `on_failure_callback` | Задача завершилась с ошибкой |
+| `on_retry_callback` | Задача отправлена на повторный запуск |
+| `sla_miss_callback` | Задача нарушила SLA |
