@@ -2264,3 +2264,53 @@ with DAG(
 | `all_done` | Все upstream-задачи завершились независимо от статуса (`success`, `failed`, `skipped`) |
 
 Переходим сразу к практике
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
+from datetime import datetime
+ 
+def ok_task():
+    print("OK task success")
+ 
+def fail_task():
+    raise Exception("Task failed")
+ 
+def final_task():
+    print("Final task executed")
+ 
+with DAG(
+    dag_id="trigger_rules_demo",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+) as dag:
+    ## таска без ошибок
+    task_ok = PythonOperator(
+        task_id="task_ok",
+        python_callable=ok_task,
+    )
+    
+    ## таска с ошибками
+    task_fail = PythonOperator(
+        task_id="task_fail",
+        python_callable=fail_task,
+    )
+ 
+    ## таска с настроенным trigger_rule
+    task_final = PythonOperator(
+        task_id="task_final",
+        python_callable=final_task,
+        trigger_rule=TriggerRule.ALL_DONE,  ## ключевая строка, отвечающая за правило триггера таски
+    )
+ 
+    [task_ok, task_fail] >> task_final
+```
+
+</details>
+
+Посмотрим на результат:
