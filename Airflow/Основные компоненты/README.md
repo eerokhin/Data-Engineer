@@ -2252,3 +2252,15 @@ with DAG(
 Нет, потому что по умолчанию параметр `trigger_rule = all_success`, а это значит, что запуск следующей таски произойдёт тогда, когда выполнятся все предыдущие. Это самый часто встречаемый сценарий, поэтому он и используется по умолчанию
 
 ### Основные Trigger Rules
+
+| Trigger Rule | Когда запускается |
+|---|---|
+| `all_success` *(по умолчанию)* | Все upstream-задачи завершились с `success` |
+| `all_failed` | Все upstream-задачи завершились с `failed` |
+| `one_success` | Хотя бы одна upstream-задача завершилась с `success` |
+| `one_failed` | Хотя бы одна upstream-задача завершилась с `failed` |
+| `none_failed` | Нет upstream-задач со статусом `failed` |
+| `none_failed_min_one_success` | Нет `failed` и хотя бы одна задача завершилась с `success` |
+| `all_done` | Все upstream-задачи завершились независимо от статуса (`success`, `failed`, `skipped`) |
+
+Переходим сразу к практике
