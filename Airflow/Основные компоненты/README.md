@@ -34,7 +34,7 @@
 - [Запуск DAG'а с параметрами](#запуск-dagа-с-параметрами)
 - [Trigger Rules](#Trigger-Rules)
   - [Основные Trigger Rules](#Основные-Trigger-Rules)
-- [Retries / SLA / Callbacks](#Retries-SLA-Callbacks)
+- [Retries / SLA / Callbacks](#retries--sla--callbacks)
 
 ## Основные компоненты пользовательского интерфейса
 
