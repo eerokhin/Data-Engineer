@@ -2508,6 +2508,8 @@ with DAG(
 
 Вот что мы увидем в логах.
 
+<img width="1883" height="779" alt="image" src="https://github.com/user-attachments/assets/e14f0af0-aa2c-4d1d-976e-ef475c20d1fe" />
+
 
 
 
