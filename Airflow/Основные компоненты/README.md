@@ -2469,3 +2469,55 @@ with DAG(
 | `on_failure_callback` | Задача завершилась с ошибкой |
 | `on_retry_callback` | Задача отправлена на повторный запуск |
 | `sla_miss_callback` | Задача нарушила SLA |
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+ 
+def task_func():
+    raise Exception("Ошибка")
+ 
+def on_failure(context):
+    print("Задача упала!")
+    print("task_id:", context["task_instance"].task_id)
+ 
+def on_success(context):
+    print("Задача успешна!")
+ 
+with DAG(
+    dag_id="callbacks_example",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    task = PythonOperator(
+        task_id="test_task",
+        python_callable=task_func,
+        on_failure_callback=on_failure,
+        on_success_callback=on_success,
+    )
+```
+
+</details>
+
+Вот что мы увидем в логах.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
