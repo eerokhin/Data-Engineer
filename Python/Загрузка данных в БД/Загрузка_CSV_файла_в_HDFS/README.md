@@ -53,8 +53,155 @@ STORED AS TEXTFILE;
 
 ## 4. Обновление данных
 
+Обновить информацию в Impala.
+
 Чтобы данные подтянулись из файла выполняем запрос (требуется подставить свое название таблицы):
 
 ```python
 REFRESH <схема>.<название таблицы>
+```
+
+Это сообщает Impala: В директории таблицы появились новые файлы, перечитай метаданные.
+
+## 5. Проверить директорию через Python
+
+В `Jupyter`, можно проверять дирректорию и путь `HDFS` прямо из `Python`.
+
+Например:
+
+```python
+import subprocess
+
+hdfs_dir = "/user/gpbu53998/test_table"
+
+result = subprocess.run(
+    ["hdfs", "dfs", "-ls", "-d", hdfs_dir],
+    capture_output=True,
+    text=True
+)
+
+print("return code:", result.returncode)
+print("stdout:", result.stdout)
+print("stderr:", result.stderr)
+```
+
+Если: `return code: 0` директория существует и доступна.
+
+Если: `return code: 1` или другой ненулевой код — нужно смотреть: `print(result.stderr)`
+
+**Если директории нет**
+
+Если у тебя есть права на создание директории:
+
+```python
+import subprocess
+
+hdfs_dir = "/user/gpbu53998/test_table"
+
+subprocess.run(
+    ["hdfs", "dfs", "-mkdir", "-p", hdfs_dir],
+    check=True
+)
+```
+
+Проверяем:
+
+```python
+subprocess.run(
+    ["hdfs", "dfs", "-ls", "-d", hdfs_dir],
+    check=True
+)
+```
+
+Но не создавать `/data/sbxm/hr/...` самостоятельно, если нет уверенности, что это правильный корпоративный путь.
+
+
+## 6. Загрузка CSV через Python
+
+Если `hdfs` доступен из `Jupyter`, можно загрузить программно.
+
+```
+import subprocess
+
+local_file = "data.csv"
+hdfs_dir = "/user/gpbu53998/test_table"
+
+result = subprocess.run(
+    ["hdfs", "dfs", "-put", local_file, hdfs_dir],
+    capture_output=True,
+    text=True
+)
+
+print("return code:", result.returncode)
+print("stdout:", result.stdout)
+print("stderr:", result.stderr)
+```
+
+Если: `return code: 0`, файл должен быть загружен.
+
+**Проверить, что CSV действительно попал в HDFS**
+
+После загрузки:
+
+```python
+import subprocess
+
+result = subprocess.run(
+    ["hdfs", "dfs", "-ls", hdfs_dir],
+    capture_output=True,
+    text=True
+)
+
+print(result.stdout)
+print(result.stderr)
+```
+
+Должно появиться примерно: `-rw-r--r--   3 gpbu53998 supergroup   1234567 2026-08-31 18:00 /user/gpbu53998/test_table/data.csv`
+
+Это означает:
+
+```text
+HDFS
+└── /user/gpbu53998/test_table
+    └── data.csv
+```
+
+## 7. Полный процесс
+
+```text
+В итоге твой workflow выглядит так:
+
+             Excel
+               │
+               ▼
+         Сохранить CSV
+               │
+               ▼
+        Проверить UTF-8
+               │
+               ▼
+      Проверить разделитель
+               │
+               ▼
+      ┌───────────────────┐
+      │ Создать таблицу    │
+      │ в Impala           │
+      └─────────┬─────────┘
+                │
+                ▼
+             HDFS
+                │
+       ┌────────┴────────┐
+       │                 │
+      Hue              Python
+       │                 │
+       └────────┬────────┘
+                ▼
+             data.csv
+                │
+                ▼
+          REFRESH table
+                │
+                ▼
+          SELECT / COUNT
 ```
