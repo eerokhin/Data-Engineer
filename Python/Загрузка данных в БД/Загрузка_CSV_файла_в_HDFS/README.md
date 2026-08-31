@@ -89,6 +89,13 @@ print("stderr:", result.stderr)
 
 Если: `return code: 1` или другой ненулевой код — нужно смотреть: `print(result.stderr)`
 
+
+`result.stdout` - обычный вывод команды
+
+`result.stderr` - ошибки/служебный вывод
+
+`result.returncode` - код завершения
+
 **Если директории нет**
 
 Если у тебя есть права на создание директории:
