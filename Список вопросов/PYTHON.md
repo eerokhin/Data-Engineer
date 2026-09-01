@@ -412,7 +412,7 @@ Cat → "Мяу"
 
 Один метод — разное поведение в зависимости от объекта.
 
-[Принципы ООП]([Python/ООП/Принципы-ООП.md](https://github.com/eerokhin/Data-Engineer/blob/main/Python/ООП/Принципы-ООП.md))
+[Принципы ООП](https://github.com/eerokhin/Data-Engineer/blob/main/Python/%D0%9E%D0%9E%D0%9F/%D0%9F%D1%80%D0%B8%D0%BD%D1%86%D0%B8%D0%BF%D1%8B-%D0%9E%D0%9E%D0%9F.md)
 
 **24. Что такое класс, объект(экземпляр) класса, атрибут, метод?**
 
