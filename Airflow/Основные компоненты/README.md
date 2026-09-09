@@ -2853,3 +2853,76 @@ Airflow — это не просто планировщик задач, а яз�
 - проектировать устойчивые пайплайны.
 
 ## Приложение
+
+**DAG для отчиски XCom**
+
+<details>
+<summary>Код</summary>
+
+```python
+"""
+Ежедневное удаление данных из XCom, которые хранятся больше суток, со всех ДАГов
+"""
+ 
+from airflow.models import DAG
+from airflow.utils.db import provide_session
+from airflow.models import XCom
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+ 
+from datetime import timedelta
+from datetime import datetime
+import logging
+ 
+logger = logging.getLogger("airflow.task")
+ 
+DEFAULT_ARGS = {
+    "owner": "eerokhin",
+    "retries": 2,
+    "retry_delay": 600,
+    "start_date": datetime(2025, 7, 20),
+}
+ 
+with DAG(
+    dag_id="TECH_Clean_Xcom",
+    default_args=DEFAULT_ARGS,
+    schedule_interval="@daily",  ## каждый день
+    description="Очистка XCom каждый день",
+    tags=["clean_xcom", "eerokhin"],
+) as dag:
+ 
+    @provide_session
+    def cleanup_xcom(session=None, **context):
+        ## удаляем данные, которые хранятся более суток
+        num_rows_deleted = 0
+        date_limit = context["logical_date"]
+        logger.info(f"Удаляем данные вплоть до {date_limit}")
+        try:
+            num_rows_deleted = (
+                session.query(XCom).filter(XCom.timestamp <= date_limit).delete()
+            )
+            session.commit()
+        except:
+            session.rollback()
+ 
+        if num_rows_deleted == 0:
+            logger.info(f"Нет записей для удаления")
+        else:
+            logger.info(f"Удалено {num_rows_deleted} строк из XCom")
+ 
+    clean_xcom = PythonOperator(
+        task_id="cleanup_xcom",
+        python_callable=cleanup_xcom,
+        provide_context=True,
+        dag=dag,
+    )
+ 
+    dag_start = EmptyOperator(task_id="start")
+    dag_end = EmptyOperator(task_id="end", trigger_rule="none_failed")
+ 
+    dag.doc_md = __doc__
+ 
+    dag_start >> clean_xcom >> dag_end
+```
+
+</details>
