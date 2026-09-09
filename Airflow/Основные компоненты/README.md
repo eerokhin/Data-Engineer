@@ -39,7 +39,10 @@
   - [SLA](#SLA)
   - [Callbacks](#Callbacks)
 - [Branching](#Branching)
-
+- [Sensor](#Sensor)
+- [Итог](#Итог)
+- [Приложение](#Приложение)
+    
 ## Основные компоненты пользовательского интерфейса
 
 В адресной строке браузере ввеcти http://127.0.0.1:8080.
@@ -2556,6 +2559,8 @@ with DAG(
 
 </details>
 
+<img width="1454" height="189" alt="image" src="https://github.com/user-attachments/assets/86cc703c-04a4-4f3f-aed2-f6ed23bf4575" />
+
 По итогам пункта:
 
 **Retries** — делают пайплайн устойчивым к временным сбоям
@@ -2616,3 +2621,235 @@ with DAG(
 
 - если строк больше 50 -> выводим heavy processing
 - если меньше -> выводим light processing
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.empty import EmptyOperator
+from datetime import datetime
+import random
+ 
+def choose_branch():
+    value = random.randint(1, 100)
+    print(f"Количество строк: {value}")
+ 
+    if value > 50:
+        return "heavy_task"
+    else:
+        return "light_task"
+ 
+def heavy():
+    print("Heavy processing")
+ 
+def light():
+    print("Light processing")
+ 
+with DAG(
+    dag_id="branching_example",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    tags=["eerokhin"],
+) as dag:
+ 
+    start = EmptyOperator(task_id="start")
+ 
+    branch = BranchPythonOperator(
+        task_id="branch_task",
+        python_callable=choose_branch,
+    )
+ 
+    heavy_task = PythonOperator(
+        task_id="heavy_task",
+        python_callable=heavy,
+    )
+ 
+    light_task = PythonOperator(
+        task_id="light_task",
+        python_callable=light,
+    )
+ 
+    end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
+ 
+    start >> branch >> [heavy_task, light_task] >> end
+```
+
+</details>
+
+Получаем следующий DAG:
+
+<img width="972" height="281" alt="image" src="https://github.com/user-attachments/assets/7de781da-d8bf-447c-91ad-5f79863032c5" />
+
+Важные моменты `Branching`:
+
+1. Для ветвления используется `BranchPythonOperator`, который возвращает имя таски, которую необходимо запустить (определяет, по какой ветке идти).
+2. Выполняется только один путь, остальные таски помечаются как `SKIPPED`, поэтому таска после выхода из ветвления должна иметь правило `trigger_rule="none_failed_min_one_success"`.
+3. Нельзя использовать одни и те же таски в двух ветках. Если нужен такой функционал, создаём ещё один `BranchPythonOperator` и не забываем в конце добавить ветвление.
+
+Branching нужен, чтобы DAG был не скриптом, а логикой.
+
+## Sensor
+
+`Sensor` — это задача, которая ждёт, пока выполнится условие.
+
+Кейс для применения:
+
+У компании есть 5 филиалов в разных часовых поясах. Каждый филиал ежедневно выгружает отчёт на свой FTP-сервер. Время выгрузки нефиксированное и может отличаться. Наша задача — автоматически обнаружить появление файлов, загрузить их в хранилище и обработать.
+
+Существует большое количество различных сенсоров. Вот примеры по типам:
+
+| **Тип** | **Sensor** | **Что ждёт** |
+|---|---|---|
+| Время | `TimeSensor` | Конкретное время |
+| Файл | `FileSensor` | Появление файла |
+| БД | `SqlSensor` | Результат SQL-запроса |
+| API | `HttpSensor` | Ответ от API |
+| DAG | `ExternalTaskSensor` | Выполнение другой задачи/DAG |
+| Cloud | `S3Sensor` / `GCSObjectExistenceSensor` | Появление объекта в облаке |
+| Airflow | `DatasetSensor` | Обновление Dataset |
+
+Cамый сложный пример из всех, которые были здесь.
+
+Смысл очень простой: моделируем кейс, описанный выше.
+
+Два сенсора отслеживают два каталога (после запуска отслеживание происходит в течение 60 секунд, проверка сенсором каталога каждые 10 секунд).
+Параллельно в один из каталогов попадает сгенерированный другой таской файл (как будто кто-то положил его туда через 20 секунд после старта всего DAG).
+
+Дальше происходит ветвление: если в каталоге есть файл — запускается задача его обработки (абстрактно), если файла нет — просто записывается лог об отсутствии файла (абстрактно).
+
+<details>
+<summary>Код</summary>
+
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.sensors.filesystem import FileSensor
+from airflow.utils.task_group import TaskGroup
+from airflow.utils.trigger_rule import TriggerRule
+from datetime import datetime
+import time
+import os
+ 
+BRANCHES = ["branch_1", "branch_2"]
+ 
+## ветвление
+def decide_branch(branch):
+    path = f"/tmp/branches/{branch}/report.csv"
+    if os.path.exists(path):
+        return f"check_files.process_{branch}"
+    return f"check_files.skip_{branch}"
+ 
+## имитация обработки
+def process_file(branch):
+    print(f"Обработка файла из {branch}")
+ 
+## генерация файла (имитация загрузки файла в каталог с ожиданием в 20 секунд после старта)
+def generate_file():
+    ## имитация ожидания
+    time.sleep(20)
+ 
+    path = "/tmp/branches/branch_1"
+    os.makedirs(path, exist_ok=True)
+ 
+    file_path = os.path.join(path, "report.csv")
+ 
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("date,value\n2026-01-26,42\n")
+    print(f"Файл создан: {file_path}")
+ 
+ 
+with DAG(
+    dag_id="sensors_branches_advanced_fixed",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+) as dag:
+ 
+    generate_file_task = PythonOperator(
+        task_id=f"generate_file",
+        python_callable=generate_file,
+    )
+ 
+    start = EmptyOperator(task_id="start")
+ 
+    with TaskGroup("check_files") as check_files:
+        for branch in BRANCHES:
+            ## создаём все задачи заранее циклом
+            wait_file = FileSensor(
+                task_id=f"wait_file_{branch}",
+                filepath=f"/tmp/branches/{branch}/report.csv",
+                poke_interval=10,  ## интервалы между проверками сенсора
+                timeout=60,        ## время работы сенсора до того, как он упадёт с ошибкой
+                mode="reschedule", ## определяет как именно сенсор будет “ждать”
+            )
+ 
+            branch_task = BranchPythonOperator(
+                task_id=f"branch_{branch}",
+                python_callable=decide_branch,
+                op_args=[branch],
+                trigger_rule=TriggerRule.ALL_DONE,
+            )
+ 
+            process = PythonOperator(
+                task_id=f"process_{branch}",
+                python_callable=process_file,
+                op_args=[branch],
+            )
+            ## имитация логирвоания
+            skip = EmptyOperator(task_id=f"skip_{branch}")
+ 
+            ## порядок соединения внутги группы
+            wait_file >> branch_task
+            branch_task >> process
+            branch_task >> skip
+ 
+    end = EmptyOperator(task_id="end", trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
+ 
+    ## общий порядок DAG'а
+    start >> check_files >> end
+    start >> generate_file_task
+```
+
+</details>
+
+Получается DAG следующего вида:
+
+<img width="805" height="391" alt="image" src="https://github.com/user-attachments/assets/9820b2fa-8aa6-43be-977b-b7d4a790571c" />
+
+В результате выполнения мы видим, что по ветке 1 файл найден (что логично — он туда генерируется), а на 2-й ветке файла нет.
+
+Как ты можешь заметить, в этом примере собраны многие темы, которые мы уже прошли. Есть и ветвление, и группировка тасок, и настройка триггеров, и даже передача параметров в функции через параметры оператора. Но есть и то, чего мы ещё не видели — начнём, конечно, с сенсора.
+
+У сенсора есть три важных параметра:
+
+- `poke_interval` — через какие промежутки времени сенсор будет проверять условия,
+- `timeout` — общее время работы сенсора,
+- `mode` — как будет проходить ожидание сенсора. Есть два типа:
+
+1. `poke` — процесс задачи блокируется, тем самым блокируя воркер,
+2. `reschedule` — воркер не простаивает, можно обслуживать больше задач, но нагружает планировщик. В продовых задачах используется чаще всего.
+
+Также обращаю внимание на цикл `for branch in BRANCHES:` — он позволяет генерировать таски, если их логика одинаковая.
+
+Пример из практики: когда необходимо обновлять две абсолютно одинаковые базы данных (одна продовая, другая — её реплика), в цикле передавая креды.
+
+Сенсоры позволяют DAG’ам «подстраиваться» под внешние события, а правильный режим работы и таймаут делают их эффективными без блокировки воркеров.
+
+## Итог
+
+Airflow — это не просто планировщик задач, а язык описания бизнес-процессов обработки данных.
+
+Теперь ты умеешь:
+
+- строить сложные DAG’и,
+- управлять конфигурацией,
+- передавать данные между задачами,
+- писать условную логику,
+- работать с внешними системами,
+- проектировать устойчивые пайплайны.
+
+## Приложение
