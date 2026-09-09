@@ -2818,7 +2818,12 @@ with DAG(
 
 Получается DAG следующего вида:
 
-<img width="805" height="391" alt="image" src="https://github.com/user-attachments/assets/9820b2fa-8aa6-43be-977b-b7d4a790571c" />
+<img width="1076" height="511" alt="image" src="https://github.com/user-attachments/assets/3cb58fea-39ef-4846-94fb-04c766cdd336" />
+
+Перед запускам создать в `Admin → Connections → Add Connection`:
+
+<img width="1001" height="510" alt="image" src="https://github.com/user-attachments/assets/cc376bb2-0e1b-4613-ab10-ad34fbb69a19" />
+
 
 В результате выполнения мы видим, что по ветке 1 файл найден (что логично — он туда генерируется), а на 2-й ветке файла нет.
 
