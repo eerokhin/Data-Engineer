@@ -38,6 +38,7 @@
   - [Retries](#Retries)
   - [SLA](#SLA)
   - [Callbacks](#Callbacks)
+- [Branching](#Branching)
 
 ## Основные компоненты пользовательского интерфейса
 
@@ -2510,14 +2511,62 @@ with DAG(
 
 <img width="1883" height="779" alt="image" src="https://github.com/user-attachments/assets/e14f0af0-aa2c-4d1d-976e-ef475c20d1fe" />
 
+Объединим все параметры в одной таске.
 
+<details>
+<summary>Код</summary>
 
+```python
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import random
+import time
+ 
+def api_task():
+    time.sleep(3)
+    if random.random() < 0.5:
+        raise Exception("API error")
+    print("Данные получены")
+ 
+def failure_callback(context):
+    print("Ошибка в таске:", context["task_instance"].task_id)
+ 
+default_args = {
+    "retries": 2,
+    "retry_delay": timedelta(seconds=3),
+}
+ 
+with DAG(
+    dag_id="retries_sla_callbacks_real_case",
+    start_date=datetime(2026, 1, 1),
+    schedule_interval=None,
+    catchup=False,
+    default_args=default_args,
+    tags=["eerokhin"],
+) as dag:
+ 
+    api_task_operator = PythonOperator(
+        task_id="api_task",
+        python_callable=api_task,
+        sla=timedelta(seconds=2),
+        on_failure_callback=failure_callback,
+    )
+```
 
+</details>
 
+По итогам пункта:
 
+**Retries** — делают пайплайн устойчивым к временным сбоям
 
+**SLA** — контролирует время выполнения задач
 
+**Callbacks** — позволяют реагировать на ошибки и успехи
 
+Вместе они превращают DAG из «скрипта» в промышленный пайплайн.
+
+## Branching
 
 
 
