@@ -163,7 +163,7 @@ s3://warehouse/orders/metadata/....metadata.json
 
 Catalog ≠ Metadata.
 
-Catalog указывает, где находится Metadata, а Metadata описывает саму Iceberg-таблицу и её snapshots. То есть Catalog — это указатель на актуальное состояние таблицы.
+Catalog указывает, где находится Metadata, а Metadata описывает саму Iceberg-таблицу и её snapshots. То есть Catalog — это указатель на актуальное состояние таблицы. Он выступает в роли адресной книги: вы даёте таблице человекочитаемое имя (например, `sales` или `meetups`), а каталог хранит ссылку на актуальный файл метаданных. 
 
 ### Как происходит INSERT
 
