@@ -1,34 +1,30 @@
 ## Apache Iceberg
 
-Apache Iceberg — табличный формат для Data Lake.
+Apache Iceberg — табличный формат для `Data Lake`.
 
-Он добавляет поверх файлового хранилища (S3/HDFS):
+Он добавляет поверх файлового хранилища (`S3/HDFS`):
 
-- Schema — структуру таблицы
-- Partitioning — разбиение данных
-- Transactions — безопасные изменения
-- Snapshots — версии состояния таблицы
-- Time Travel — просмотр данных в прошлом
-- Rollback — откат к предыдущему состоянию
-- Schema Evolution — изменение схемы без полной пересборки
+- `Schema` — структуру таблицы
+- `Partitioning` — разбиение данных
+- `Transactions` — безопасные изменения
+- `Snapshots` — версии состояния таблицы
+- `Time Travel` — просмотр данных в прошлом
+- `Rollback` — откат к предыдущему состоянию
+- `Schema Evolution` — изменение схемы без полной пересборки
 
-Важно:
+Важно: `Iceberg ≠ база данных`.
 
-Iceberg ≠ база данных.
+Данные физически хранятся в `Object Storage` (`S3`, `MinIO` и т.д.), например в `Parquet`.
 
-Данные физически хранятся в Object Storage
-(S3, MinIO и т.д.), например в Parquet.
-
-Iceberg управляет тем, как эти файлы
-объединяются в логическую таблицу.
+Iceberg управляет тем, как эти файлы объединяются в логическую таблицу.
 
 ## Iceberg Architecture
 
-Iceberg превращает набор файлов в S3/HDFS в полноценную таблицу
-с метаданными, транзакциями и историей изменений.
+Iceberg превращает набор файлов в `S3/HDFS` в полноценную таблицу с метаданными, транзакциями и историей изменений.
 
 ### Основные уровни
 
+```
 Catalog
 ↓
 Metadata File
@@ -40,6 +36,10 @@ Manifest List
 Manifest
 ↓
 Data Files
+```
+
+<img width="1163" height="632" alt="image" src="https://github.com/user-attachments/assets/d905cf10-e1a2-48f7-a8e4-15d7e4ae79a7" />
+
 
 ### Data Files
 
