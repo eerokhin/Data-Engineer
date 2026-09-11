@@ -198,3 +198,90 @@ CREATE TABLE orders (
 USING iceberg
 TBLPROPERTIES ('format-version'='2', 'write.format.default'='parquet');
 ```
+
+<img width="864" height="210" alt="image" src="https://github.com/user-attachments/assets/21760cc3-f69a-4543-a1e3-b57cb5384e49" />
+
+Несколько важных моментов:
+
+- `USING iceberg` указывает `Spark`, что это таблица `Iceberg`
+- Мы храним данные в файлах `Parquet` (по умолчанию, но лучше быть явным)
+- `format-version='2'` включает операции на уровне строк `(UPDATE, DELETE, MERGE)`
+- Пока без партицирования — мы рассмотрим это в следующем упражнении
+
+Проверить, что таблица создана:
+
+```sql
+DESCRIBE orders;
+```
+Должны увидеть что-то вроде:
+
+<img width="411" height="149" alt="image" src="https://github.com/user-attachments/assets/56787061-dff3-46b7-80ec-a4bfedb26f69" />
+
+### Шаг 5: Вставка данных
+
+Добавим несколько заказов. Ничего сложного — просто обычные `INSERT`-запросы:
+
+```sql
+INSERT INTO orders VALUES
+    (1001, 42, CAST('2024-01-15' AS DATE), 299.99, 'completed'),
+    (1002, 17, CAST('2024-01-15' AS DATE), 149.50, 'completed'),
+    (1003, 42, CAST('2024-01-16' AS DATE), 89.00, 'pending');
+```
+
+Добавим ещё парочку:
+
+```sql
+INSERT INTO orders VALUES
+    (1004, 88, CAST('2024-01-16' AS DATE), 1250.00, 'completed'),
+    (1005, 17, CAST('2024-01-17' AS DATE), 45.00, 'cancelled');
+```
+
+*Фотографии таблицы: Каждый `INSERT` создаёт новый снапшот. Представьте, что вы фотографируете таблицу после каждого изменения. Эти «фотографии» позволяют потом путешествовать во времени, но об этом позже.*
+
+<img width="816" height="208" alt="image" src="https://github.com/user-attachments/assets/7f387087-56c6-4bd2-8b6f-ee6b24c9e868" />
+
+### Шаг 6: Запрос данных
+
+Убедимся, что всё корректно записалось:
+
+```sql
+SELECT * FROM orders ORDER BY order_id;
+```
+
+Должны увидеть все пять заказов:
+
+<img width="650" height="150" alt="image" src="https://github.com/user-attachments/assets/b049e88e-812b-487c-9387-bd32d774cfab" />
+
+Попробуйте более интересный запрос — общая выручка по клиентам:
+
+```sql
+SELECT
+    customer_id,
+    COUNT(*) AS order_count,
+    SUM(total_amount) AS total_spent
+FROM orders
+WHERE status = 'completed'
+GROUP BY customer_id
+ORDER BY total_spent DESC;
+```
+
+Должны получить такой результат:
+
+<img width="540" height="243" alt="image" src="https://github.com/user-attachments/assets/34b31580-3bac-4e65-a8df-ed295c1955d9" />
+
+### Шаг 7: Заглянем под капот
+
+Вот где Iceberg становится по-настоящему интересным. Давайте посмотрим на созданные снапшоты, запросив метатаблицу снапшотов:
+
+```sql
+SELECT
+    snapshot_id,
+    committed_at,
+    operation
+FROM demo.ecommerce.orders.snapshots
+ORDER BY committed_at;
+```
+
+Вот что я получил:
+
+<img width="567" height="189" alt="image" src="https://github.com/user-attachments/assets/470e9e88-b5e1-428c-9fcb-d77062f9d807" />
