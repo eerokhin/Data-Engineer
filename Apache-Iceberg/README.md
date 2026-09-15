@@ -18,4 +18,5 @@
 
 [Apache Iceberg. ACID-Transactions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/ACID%E2%80%91transactions.md)
 
+[Apache Iceberg. Updates-and-deletions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Updates-and-deletions.md)
 
