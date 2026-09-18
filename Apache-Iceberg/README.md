@@ -10,7 +10,7 @@
 
 [Apache Iceberg. Catalog](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Catalog.md)
 
-[Apache-Iceberg-task1](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-task1.md)
+[Apache-Iceberg. Task1](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-task1.md)
 
 **Транзакции и изменения данных**
 
@@ -21,3 +21,5 @@
 [Apache Iceberg. Updates-and-deletions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Updates-and-deletions.md)
 
 [Apache Iceberg. Data-types-and-schema-evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Data-types-and-schema-evolution.md)
+
+[Apache Iceberg. Task2:-Schema-Evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache%20Iceberg.-Task2%3A-Schema-Evolution.md)
