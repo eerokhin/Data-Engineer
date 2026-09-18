@@ -23,3 +23,9 @@
 [Apache Iceberg. Data-types-and-schema-evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Data-types-and-schema-evolution.md)
 
 [Apache Iceberg. Task2:-Schema-Evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache%20Iceberg.-Task2%3A-Schema-Evolution.md)
+
+**Партицирование и кластеризация**
+
+Оптимизируйте хранение данных с помощью партицирования и кластеризации. Научитесь скрытому партицированию, трансформациям и `Z‑ordering` для ускорения запросов.
+
+[Apache Iceberg. Partitioning-and-the-evolution-of-partitions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Partitioning-and-the-evolution-of-partitions.md)
