@@ -41,7 +41,9 @@ where not exists (/*Оставь строки из основной таблиц
     select 1
     from credits cr
     where cr.client_id = c.client_id);
-</details> ```
+ ```
+
+</details>
 
 
 2) Какой запрос написать для преобразования?
