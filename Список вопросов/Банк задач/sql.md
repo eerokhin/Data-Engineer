@@ -32,7 +32,7 @@ on a.client_id = b.client_id
 where b.client_id IS NULL;
 
 
-
+/*2 Вариант*/
 select
     c.client_id,
     c.client_name
@@ -80,6 +80,14 @@ select a.id, a.fio, a.city
 from t1 a
 join t2 b 
 on a.id = b.id
+
+/*2 Вариант*/
+select
+    id,
+    MAX(CASE WHEN key = 'fio' THEN value END) AS fio,
+    MAX(CASE WHEN key = 'city' THEN value END) AS city
+from source_data
+group by id;
 ```
 
 </details> 
