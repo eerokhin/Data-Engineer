@@ -80,4 +80,6 @@ select a.id, a.fio, a.city
 from t1 a
 join t2 b 
 on a.id = b.id
-</details> ```
+```
+
+</details> 
