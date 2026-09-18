@@ -21,13 +21,13 @@
 
 Если у вас ещё не запущено локальное окружение, выполните команды из упражнения «Каталоги»:
 
-```python
+```cmd
 cd iceberg-course-exercises
 docker compose up -d
 ```
 
 Подключится к Spark SQL:
 
-```python
+```cmd
 docker compose exec -it spark-iceberg spark-sql --conf "spark.hadoop.hive.cli.print.header=true"
 ```
