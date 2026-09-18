@@ -76,7 +76,7 @@ select a.id, a.value as city
 from source_data a
 where a.key = 'city')
 
-select a.id, a.fio, a.city
+select a.id, a.fio, b.city
 from t1 a
 join t2 b 
 on a.id = b.id
