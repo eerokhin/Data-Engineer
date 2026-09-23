@@ -32,4 +32,4 @@
 
 [Apache Iceberg. Task-Partitioing](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Partitioing.md)
 
-[Apache Iceberg. Clustering](https://github.com/eerokhin/Data-Engineer/tree/main/Apache-Iceberg)
+[Apache Iceberg. Clustering](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Clustering.md)
