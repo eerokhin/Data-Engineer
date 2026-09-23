@@ -29,3 +29,5 @@
 Оптимизируйте хранение данных с помощью партицирования и кластеризации. Научитесь скрытому партицированию, трансформациям и `Z‑ordering` для ускорения запросов.
 
 [Apache Iceberg. Partitioning-and-the-evolution-of-partitions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Partitioning-and-the-evolution-of-partitions.md)
+
+[Apache Iceberg. Task-Partitioing](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Partitioing.md)
