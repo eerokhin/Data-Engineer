@@ -16,20 +16,26 @@
 
 Изучите транзакции и операции изменения данных. Узнайте, как Iceberg обеспечивает ACID-гарантии, безопасную эволюцию схемы и работу с обновлениями и удалениями.
 
-[Apache Iceberg. ACID-Transactions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/ACID%E2%80%91transactions.md)
+[Apache Iceberg. ACID Transactions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/ACID%E2%80%91transactions.md)
 
-[Apache Iceberg. Updates-and-deletions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Updates-and-deletions.md)
+[Apache Iceberg. Updates and deletions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Updates-and-deletions.md)
 
-[Apache Iceberg. Data-types-and-schema-evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Data-types-and-schema-evolution.md)
+[Apache Iceberg. Data types and schema evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Data-types-and-schema-evolution.md)
 
-[Apache Iceberg. Task2:-Schema-Evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache%20Iceberg.-Task2%3A-Schema-Evolution.md)
+[Apache Iceberg. Task2:Schema Evolution](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache%20Iceberg.-Task2%3A-Schema-Evolution.md)
 
 **Партицирование и кластеризация**
 
 Оптимизируйте хранение данных с помощью партицирования и кластеризации. Научитесь скрытому партицированию, трансформациям и `Z‑ordering` для ускорения запросов.
 
-[Apache Iceberg. Partitioning-and-the-evolution-of-partitions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Partitioning-and-the-evolution-of-partitions.md)
+[Apache Iceberg. Partitioning and the evolution of partitions](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Partitioning-and-the-evolution-of-partitions.md)
 
-[Apache Iceberg. Task-Partitioing](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Partitioing.md)
+[Apache Iceberg. Task Partitioing](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Partitioing.md)
 
 [Apache Iceberg. Clustering](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Clustering.md)
+
+**Time Travel**
+
+Откройте для себя `time travel` — возможность путешествовать по снапшотам таблицы, откатывать изменения и анализировать историю данных.
+
+[Apache Iceberg. Time Travel and Rollback](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Time-Travel-and-Rollback.md)
