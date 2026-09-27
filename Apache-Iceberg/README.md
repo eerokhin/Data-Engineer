@@ -39,3 +39,5 @@
 Откройте для себя `time travel` — возможность путешествовать по снапшотам таблицы, откатывать изменения и анализировать историю данных.
 
 [Apache Iceberg. Time Travel and Rollback](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Time-Travel-and-Rollback.md)
+
+[Apache Iceberg. Task Time Travel](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Time-Travel.md)
