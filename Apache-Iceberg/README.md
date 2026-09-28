@@ -41,3 +41,9 @@
 [Apache Iceberg. Time Travel and Rollback](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Time-Travel-and-Rollback.md)
 
 [Apache Iceberg. Task Time Travel](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Time-Travel.md)
+
+**Ветвление и метатаблицы**
+
+Освойте `Git`‑подобное ветвление и тегирование, а также метатаблицы для отладки и анализа внутренней структуры Iceberg.
+
+[Apache Iceberg. Tagging and branching](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Tagging-and-branching.md)
