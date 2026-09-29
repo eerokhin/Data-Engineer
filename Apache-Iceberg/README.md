@@ -60,3 +60,4 @@
 
 [Apache Iceberg. Task Table maintenance](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Table-maintenance.md)
 
+[Apache Iceberg. Query engines and ecosystem](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Query-engines-and-ecosystem.md)
