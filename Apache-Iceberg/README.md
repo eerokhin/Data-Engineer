@@ -49,3 +49,5 @@
 [Apache Iceberg. Tagging and branching](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Tagging-and-branching.md)
 
 [Apache Iceberg. Task Branching and Tagging](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Branching-and-Tagging.md)
+
+[Apache Iceberg. Metatables](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Metatables.md)
