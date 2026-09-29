@@ -67,15 +67,15 @@ print(items)
 
 **Функция принимает:**
 
-• new_element - строку или список строк;
+• `new_element` - строку или список строк;
 
-• init_sequence - исходный список, необязательный параметр.
+• `init_sequence` - исходный список, необязательный параметр.
 
 **Правила работы:**
 
-• Если new_element является строкой, добавить её с помощью append().
+• Если `new_element` является строкой, добавить её с помощью `append()`.
 
-• Если передан список строк, добавить все элементы с помощью extend().
+• Если передан список строк, добавить все элементы с помощью `extend()`.
 
 • Если исходный список не передан, создать новый пустой список.
 
@@ -101,6 +101,36 @@ print(sequence_3)
 <summary>Решение</summary>
   
 ```python
+def add_element(new_element, init_sequence=None):
+    '''
+    isinstance()  # проверяем тип
+    all()         # проверяем все элементы
+    append()      # добавляем один элемент
+    extend()      # добавляем несколько элементов
+    '''
+    
+    if init_sequence is None:
+        init_sequence = []
+
+    if isinstance(new_element, str):
+        init_sequence.append(new_element)
+
+    elif isinstance(new_element, list) and all(isinstance(x, str) for x in new_element):
+        init_sequence.extend(new_element)
+
+    return init_sequence
+
+sequence_1 = add_element("first")
+print(sequence_1)
+# ['first']
+
+sequence_2 = add_element(["second", "third"], sequence_1)
+print(sequence_2)
+# ['first', 'second', 'third']
+
+sequence_3 = add_element(["fourth"], sequence_2)
+print(sequence_3)
+# ['first', 'second', 'third', 'fourth']
 
 ```
 
