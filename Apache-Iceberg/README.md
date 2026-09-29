@@ -57,3 +57,6 @@
 Научитесь обслуживать таблицы, удалять старые снапшоты, компактифицировать файлы и познакомьтесь с экосистемой движков запросов (`Spark`,`Flink`, `Trino`).
 
 [Apache Iceberg. Table maintenance](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Table-maintenance.md)
+
+[Apache Iceberg. Task Table maintenance](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Table-maintenance.md)
+
