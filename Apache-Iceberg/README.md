@@ -51,3 +51,9 @@
 [Apache Iceberg. Task Branching and Tagging](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Task-Branching-and-Tagging.md)
 
 [Apache Iceberg. Metatables](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Metatables.md)
+
+**Обслуживание и экосистема**
+
+Научитесь обслуживать таблицы, удалять старые снапшоты, компактифицировать файлы и познакомьтесь с экосистемой движков запросов (`Spark`,`Flink`, `Trino`).
+
+[Apache Iceberg. Table maintenance](https://github.com/eerokhin/Data-Engineer/blob/main/Apache-Iceberg/Apache-Iceberg-Table-maintenance.md)
