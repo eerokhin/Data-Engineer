@@ -110,5 +110,69 @@ with DAG(
 
 </details>
 
+**2. Использовали ли Sensors?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+Да, использовал `Sensors` для ожидания наступления определённого события или готовности данных перед запуском следующих task.
+
+Например, если DAG должен был обрабатывать данные только после того, как они появятся в определённом месте, можно было использовать `FileSensor` или другой подходящий Sensor.
+
+Пример:
+
+```python
+from datetime import datetime
+
+from airflow import DAG
+from airflow.sensors.filesystem import FileSensor
+from airflow.operators.python import PythonOperator
+
+
+def process_data():
+    print("Обрабатываем данные")
+
+
+with DAG(
+    dag_id="sensor_example",
+    start_date=datetime(2026, 10, 1),
+    schedule="0 11 * * *",
+    catchup=False,
+) as dag:
+
+    wait_for_file = FileSensor(
+        task_id="wait_for_file",
+        filepath="/data/input/file.csv",
+        poke_interval=60,
+        timeout=60 * 60,
+        mode="reschedule",
+    )
+
+    process = PythonOperator(
+        task_id="process_data",
+        python_callable=process_data,
+    )
+
+    wait_for_file >> process
+```
+
+В данном случае DAG сначала ждёт появления файла:
+
+```text
+wait_for_file
+      ↓
+   файл появился
+      ↓
+process_data
+```
+
+Если файл ещё не появился, Sensor продолжает ждать. После его появления task завершается успешно и запускается следующий task.
+
+Также Sensor можно использовать не только для файлов — например, для ожидания появления данных в таблице, завершения другого DAG или наступления определённого события.
+
+</details>
+
 
 
