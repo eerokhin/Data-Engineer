@@ -192,9 +192,6 @@ process_data
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
 
-<details>
-<summary><strong>3. Использовали ли Retry?</strong></summary>
-
 ### Ответ
 
 Да, использовал `Retry`. Он применяется, если отдельный `task` завершился с ошибкой и его нужно автоматически выполнить повторно.
