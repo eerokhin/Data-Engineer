@@ -555,7 +555,7 @@ context
 **8. Какие операторы вы знаете?**
 
 <details>
-<summary><strong>1. Какие операторы вы знаете?</strong></summary>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 ### Ответ
 
