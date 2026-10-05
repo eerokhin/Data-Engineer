@@ -552,6 +552,83 @@ context
 
 </details>
 
+**8. Какие операторы вы знаете?**
+
+<details>
+<summary><strong>1. Какие операторы вы знаете?</strong></summary>
+
+### Ответ
+
+**Operator** — это шаблон, который определяет, какую работу будет выполнять `task`.
+
+Основные операторы:
+
+* **`PythonOperator`** — выполнение Python-функции.
+
+```python
+PythonOperator(
+    task_id="load_data",
+    python_callable=load_data,
+)
+```
+
+* **`SQLExecuteQueryOperator`** — выполнение SQL-запросов в подключённой БД.
+
+```python
+SQLExecuteQueryOperator(
+    task_id="build_mart",
+    conn_id="source_db",
+    sql="SELECT * FROM staging.employee;",
+)
+```
+
+* **`BashOperator`** — выполнение команд и shell-скриптов.
+
+```python
+BashOperator(
+    task_id="run_script",
+    bash_command="python /opt/airflow/dags/scripts/load_data.py",
+)
+```
+
+* **`BranchPythonOperator`** — выбор одной из веток DAG в зависимости от результата Python-функции.
+
+```text
+             check_data
+             /        \
+            ↓          ↓
+      process_data   skip_data
+```
+
+* **`EmailOperator`** — отправка email.
+
+* **`EmptyOperator`** — ничего не выполняет и используется для организации структуры и ветвления DAG.
+
+### Что использовал
+
+В основном использовал:
+
+* `PythonOperator` — для Python-логики и работы с API;
+* SQL-операторы — для выполнения SQL и формирования витрин.
+
+Также знаком с `BashOperator`, `BranchPythonOperator` и `EmptyOperator`.
+
+### Важно
+
+`Operator` определяет, **как выполняется конкретный task**.
+
+Например:
+
+```python
+load_data = PythonOperator(
+    task_id="load_data",
+    python_callable=load_data_func,
+)
+```
+
+Здесь `PythonOperator` — класс оператора, а `load_data` — конкретный `task`, созданный на его основе.
+
+</details>
 
 
 
