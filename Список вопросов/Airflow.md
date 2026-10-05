@@ -469,6 +469,28 @@ duration_sec    = 850
 rows_processed  = 125430
 ```
 
+Информацию о текущем выполнении `DAG` и `task` можно получить из `context`, который `Airflow` передаёт в `Python`-функцию или `callback`.
+
+Например:
+
+```python
+def write_monitoring(context):
+    dag_id = context["dag"].dag_id
+    task_id = context["task_instance"].task_id
+```
+
+После этого полученные данные можно записать в БД с помощью `SQL INSERT`.
+
+```text
+context
+   ↓
+получаем dag_id, task_id и другую информацию
+   ↓
+формируем INSERT
+   ↓
+записываем данные в pipeline_monitoring
+```
+
 Такую таблицу можно использовать для построения дополнительного мониторинга и отчётности.
 
 </details>
