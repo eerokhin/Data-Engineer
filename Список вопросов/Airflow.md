@@ -630,6 +630,216 @@ load_data = PythonOperator(
 
 </details>
 
+**9. Что такое сенсор и для чего он нужен?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+**Sensor** — это специальный тип `task`, который **ждёт наступления определённого условия или события**, прежде чем продолжить выполнение DAG.
+
+Например, если следующий этап обработки можно запускать только после появления файла:
+
+```text
+wait_for_file
+      ↓
+process_data
+      ↓
+build_mart
+```
+
+`Sensor` будет периодически проверять, появился ли нужный файл.
+
+Пример:
+
+```python
+from datetime import datetime
+
+from airflow import DAG
+from airflow.sensors.filesystem import FileSensor
+from airflow.operators.python import PythonOperator
+
+
+def process_file():
+    print("Файл найден, начинаем обработку")
+
+
+with DAG(
+    dag_id="sensor_example",
+    start_date=datetime(2026, 10, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    wait_for_file = FileSensor(
+        task_id="wait_for_file",
+        filepath="/opt/airflow/data/input.csv",
+        poke_interval=30,
+        timeout=60 * 10,
+        mode="reschedule",
+    )
+
+    process = PythonOperator(
+        task_id="process_file",
+        python_callable=process_file,
+    )
+
+    wait_for_file >> process
+```
+
+Здесь:
+
+* `filepath` — файл, появления которого ждём;
+* `poke_interval` — как часто проверять условие;
+* `timeout` — максимальное время ожидания;
+* `mode="reschedule"` — после проверки Sensor освобождает worker и будет запущен снова позже.
+
+### Принцип работы
+
+```text
+Sensor запустился
+       ↓
+Условие выполнено?
+   ↙           ↘
+  Нет           Да
+   ↓             ↓
+Ждём         Sensor → success
+   ↓                       ↓
+повторная проверка      следующий task
+```
+
+Например:
+
+```text
+wait_for_file
+      ↓
+   FileSensor
+      ↓
+файл появился?
+      ↓
+   SUCCESS
+      ↓
+process_data
+```
+
+Sensor нужен, когда **нельзя просто сразу запускать следующий task**, потому что сначала необходимо дождаться внешнего события: появления файла, готовности данных, завершения другого процесса и т.д.
+
+### Sensor vs обычный task
+
+Обычный `task` выполняет работу:
+
+```text
+load_data → загружает данные
+```
+
+Sensor в основном **ждёт**:
+
+```text
+wait_for_data → ждёт, пока данные станут доступны
+```
+
+</details>
+
+**10. Таска в AirFlow упала с ошибкой, как сделать так, чтобы несмотря на ошибку, следующая таска запустилась?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+Для этого используется параметр **`trigger_rule`**.
+
+По умолчанию у `task` используется:
+
+```python
+from airflow.utils.trigger_rule import TriggerRule
+
+trigger_rule=TriggerRule.ALL_SUCCESS
+```
+
+То есть следующая `task` запустится только если все upstream-задачи завершились успешно.
+
+Если нужно запустить `task` независимо от того, успешно или с ошибкой завершилась предыдущая, можно использовать:
+
+```python
+trigger_rule=TriggerRule.ALL_DONE
+```
+
+Пример:
+
+```python
+from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
+
+task_1 = PythonOperator(
+    task_id="task_1",
+    python_callable=some_function,
+)
+
+task_2 = PythonOperator(
+    task_id="task_2",
+    python_callable=another_function,
+    trigger_rule=TriggerRule.ALL_DONE,
+)
+
+task_1 >> task_2
+```
+
+В этом случае:
+
+```text
+task_1
+   ↓
+ ┌───────┐
+ │       │
+SUCCESS  FAILED
+ │       │
+ └───┬───┘
+     ↓
+  task_2
+```
+
+`task_2` запустится в обоих случаях.
+
+### Когда это используется
+
+Например, для финального `task`, который должен выполняться независимо от результата предыдущих задач:
+
+```text
+load_data
+    ↓
+build_mart
+    ↓
+send_notification
+```
+
+Если `build_mart` упал, `send_notification` всё равно может запуститься и отправить уведомление об ошибке.
+
+Другой пример — очистка временных файлов:
+
+```text
+load_data
+    ↓
+cleanup
+```
+
+Даже если `load_data` завершился с ошибкой, `cleanup` должен выполниться.
+
+### Другие основные `trigger_rule`
+
+```python
+TriggerRule.ALL_SUCCESS   # все upstream успешны
+TriggerRule.ALL_DONE      # все upstream завершились
+TriggerRule.ONE_SUCCESS   # хотя бы один upstream успешен
+TriggerRule.ONE_FAILED    # хотя бы один upstream упал
+TriggerRule.NONE_FAILED   # ни один upstream не упал
+TriggerRule.NONE_SKIPPED  # ни один upstream не пропущен
+```
+
+Важно: `ALL_DONE` означает, что upstream-задачи **завершили выполнение**, независимо от их результата. Это не означает, что они завершились успешно.
+
+</details>
 
 
 
