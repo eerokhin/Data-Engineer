@@ -1108,6 +1108,80 @@ Task 2
 
 </details>
 
+**13. Какие базы данных используется в Airflow?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+В Airflow используется **Metadata Database** — служебная база данных, в которой Airflow хранит информацию о своей работе.
+
+В ней хранятся:
+
+* DAG и DAG Run;
+* Task Instance и их статусы;
+* история запусков;
+* Connections;
+* Variables;
+* XCom;
+* информация о пользователях и настройках Airflow.
+
+Для **production** обычно используют:
+
+* **PostgreSQL**;
+* **MySQL**.
+
+Для локальной разработки и тестов может использоваться **SQLite**, но для production она не подходит.
+
+Например, в Docker Compose Airflow может работать с PostgreSQL:
+
+```text id="c8m4qp"
+             Airflow
+                │
+                ↓
+        PostgreSQL
+                │
+        Metadata Database
+```
+
+Полный пример подключения в DAG:
+
+```python id="x2r7kv"
+from datetime import datetime
+
+from airflow import DAG
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+
+
+with DAG(
+    dag_id="database_example",
+    start_date=datetime(2026, 10, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    select_data = SQLExecuteQueryOperator(
+        task_id="select_data",
+        conn_id="postgres_conn",
+        sql="SELECT * FROM employees;",
+    )
+```
+
+Здесь `postgres_conn` — это **Connection**, через который task подключается к PostgreSQL.
+
+Важно: PostgreSQL в этом примере может быть **двумя разными вещами**:
+
+1. **Metadata Database Airflow** — хранит служебную информацию самого Airflow.
+2. **PostgreSQL как источник/приёмник данных** — с ним DAG может работать через `PostgresHook`, `SQLExecuteQueryOperator` и другие инструменты.
+
+То есть Airflow **не является DWH** и не хранит в своей Metadata Database бизнес-данные DAG'ов.
+
+**Коротко**
+
+> Airflow использует Metadata Database для хранения служебной информации: DAG Run, Task Instance, статусов, Connections, Variables, XCom и истории выполнения. В production обычно используют PostgreSQL или MySQL, а SQLite — в основном для разработки и тестов.
+
+</details>
 
 
 
