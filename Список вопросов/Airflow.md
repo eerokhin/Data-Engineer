@@ -841,8 +841,272 @@ TriggerRule.NONE_SKIPPED  # ни один upstream не пропущен
 
 </details>
 
+**11. Как в AirFlow в зависимости от условия продолжить обработку по нужной ветке ДАГа?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+Для этого используется **`BranchPythonOperator`**.
+
+Он позволяет в зависимости от условия выбрать, **по какой ветке DAG продолжить выполнение**.
+
+`BranchPythonOperator` вызывает Python-функцию, которая должна вернуть `task_id` следующей задачи.
+
+Полный пример:
+
+```python id="7k2m4p"
+from datetime import datetime
+
+from airflow import DAG
+from airflow.operators.python import BranchPythonOperator, PythonOperator
 
 
+def check_data():
+    data_exists = True
+
+    if data_exists:
+        return "process_data"
+    else:
+        return "skip_data"
+
+
+def process_function():
+    print("Обрабатываем данные")
+
+
+def skip_function():
+    print("Данных нет, пропускаем обработку")
+
+
+with DAG(
+    dag_id="branching_example",
+    start_date=datetime(2026, 10, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    check = BranchPythonOperator(
+        task_id="check_data",
+        python_callable=check_data,
+    )
+
+    process_data = PythonOperator(
+        task_id="process_data",
+        python_callable=process_function,
+    )
+
+    skip_data = PythonOperator(
+        task_id="skip_data",
+        python_callable=skip_function,
+    )
+
+    check >> [process_data, skip_data]
+```
+
+Логика DAG:
+
+```text
+             check_data
+                  ↓
+           ┌──────┴──────┐
+           ↓             ↓
+    process_data      skip_data
+```
+
+Если `check_data()` возвращает:
+
+```python id="2yq6fr"
+return "process_data"
+```
+
+то:
+
+```text
+check_data → process_data
+```
+
+а `skip_data` будет пропущена (`skipped`).
+
+Если возвращает:
+
+```python id="6j5t8w"
+return "skip_data"
+```
+
+то:
+
+```text
+check_data → skip_data
+```
+
+а `process_data` будет пропущена.
+
+### Важный момент
+
+Функция, переданная в `BranchPythonOperator`, должна вернуть **`task_id` существующей downstream-задачи**:
+
+```python id="7p8q1z"
+return "process_data"
+```
+
+Здесь `"process_data"` соответствует:
+
+```python id="8n4v6s"
+process_data = PythonOperator(
+    task_id="process_data",
+    ...
+)
+```
+
+То есть `BranchPythonOperator` **не выполняет обработку данных сам**, а только определяет, какую ветку DAG запустить.
+
+</details>
+
+**12. Что такое XCOM?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+**XCom (Cross-Communication)** — механизм Airflow для передачи **небольших значений между task**.
+
+Например, одна task получила путь к файлу, а следующей task нужно этот путь получить.
+
+### Пример
+
+Полный DAG:
+
+```python id="q7v3nk"
+from datetime import datetime
+
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
+
+def get_file():
+    return "/data/input.csv"
+
+
+def process_file(**context):
+    file_path = context["ti"].xcom_pull(
+        task_ids="get_file"
+    )
+
+    print(f"Обрабатываем файл: {file_path}")
+
+
+with DAG(
+    dag_id="xcom_example",
+    start_date=datetime(2026, 10, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    get_data = PythonOperator(
+        task_id="get_file",
+        python_callable=get_file,
+    )
+
+    process = PythonOperator(
+        task_id="process_file",
+        python_callable=process_file,
+    )
+
+    get_data >> process
+```
+
+### Как это работает
+
+Первая task:
+
+```python id="j2m8rf"
+def get_file():
+    return "/data/input.csv"
+```
+
+возвращает:
+
+```text
+/data/input.csv
+```
+
+Airflow автоматически сохраняет возвращаемое значение в **XCom**.
+
+Следующая task получает его:
+
+```python id="2r7h4k"
+file_path = context["ti"].xcom_pull(
+    task_ids="get_file"
+)
+```
+
+Здесь:
+
+```text id="k9m2qw"
+task_ids="get_file"
+          ↓
+Airflow ищет XCom,
+который записала task get_file
+          ↓
+"/data/input.csv"
+```
+
+Общая схема:
+
+```text id="p5v8cx"
+get_file
+    │
+    │ return "/data/input.csv"
+    ↓
+  XCom
+    │
+    │ xcom_pull()
+    ↓
+process_file
+```
+
+### Важно
+
+XCom предназначен для передачи **небольших значений**, например:
+
+* ID;
+* пути к файлу;
+* даты;
+* небольших параметров;
+* количества обработанных строк.
+
+Не стоит передавать через XCom большие объёмы данных, например DataFrame на миллионы строк.
+
+Для больших данных используется внешнее хранилище:
+
+```text id="u3k7pd"
+Task 1
+   ↓
+HDFS / S3 / БД
+   ↓
+Task 2
+```
+
+А через XCom можно передать только путь или идентификатор:
+
+```text id="z6n4rs"
+Task 1
+   ↓
+XCom: "/data/file.parquet"
+   ↓
+Task 2
+   ↓
+читает файл из HDFS/S3
+```
+
+**Коротко**
+
+> XCom — механизм Airflow для передачи небольших значений между task. Например, одна task может передать следующей путь к файлу, ID или другой небольшой параметр. Большие объёмы данных через XCom не передают.
+
+</details>
 
 
 
