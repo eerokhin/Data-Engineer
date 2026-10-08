@@ -1115,7 +1115,7 @@ Task 2
 
 ### Ответ
 
-В Airflow используется **Metadata Database** — служебная база данных, в которой Airflow хранит информацию о своей работе.
+Airflow использует **Metadata Database** — служебную базу данных, в которой хранится информация о работе самого Airflow.
 
 В ней хранятся:
 
@@ -1124,65 +1124,151 @@ Task 2
 * история запусков;
 * Connections;
 * Variables;
-* XCom;
-* информация о пользователях и настройках Airflow.
+* XCom.
 
-Для **production** обычно используют:
+В качестве Metadata Database можно использовать:
 
 * **PostgreSQL**;
 * **MySQL**.
 
-Для локальной разработки и тестов может использоваться **SQLite**, но для production она не подходит.
+Для локальной разработки также может использоваться **SQLite**.
 
-Например, в Docker Compose Airflow может работать с PostgreSQL:
+Например, если Airflow работает с PostgreSQL:
 
-```text id="c8m4qp"
-             Airflow
-                │
-                ↓
-        PostgreSQL
-                │
-        Metadata Database
+```text id="c7m2pa"
+              Airflow
+                 │
+                 ↓
+            PostgreSQL
+                 │
+          Metadata Database
 ```
 
-Полный пример подключения в DAG:
+Airflow записывает туда информацию о выполнении DAG:
 
-```python id="x2r7kv"
-from datetime import datetime
-
-from airflow import DAG
-from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-
-
-with DAG(
-    dag_id="database_example",
-    start_date=datetime(2026, 10, 1),
-    schedule=None,
-    catchup=False,
-) as dag:
-
-    select_data = SQLExecuteQueryOperator(
-        task_id="select_data",
-        conn_id="postgres_conn",
-        sql="SELECT * FROM employees;",
-    )
+```text id="p8v4kx"
+DAG запустился
+      ↓
+Task выполняется
+      ↓
+статус → running
+      ↓
+Task завершилась
+      ↓
+статус → success / failed
 ```
 
-Здесь `postgres_conn` — это **Connection**, через который task подключается к PostgreSQL.
+При этом **бизнес-данные туда не складываются**.
 
-Важно: PostgreSQL в этом примере может быть **двумя разными вещами**:
+Например, если DAG загружает данные в Impala, сами данные находятся в Impala/Hadoop, а информация о выполнении этого DAG — в Metadata Database Airflow.
 
-1. **Metadata Database Airflow** — хранит служебную информацию самого Airflow.
-2. **PostgreSQL как источник/приёмник данных** — с ним DAG может работать через `PostgresHook`, `SQLExecuteQueryOperator` и другие инструменты.
+### Коротко
 
-То есть Airflow **не является DWH** и не хранит в своей Metadata Database бизнес-данные DAG'ов.
-
-**Коротко**
-
-> Airflow использует Metadata Database для хранения служебной информации: DAG Run, Task Instance, статусов, Connections, Variables, XCom и истории выполнения. В production обычно используют PostgreSQL или MySQL, а SQLite — в основном для разработки и тестов.
+> В Airflow используется Metadata Database — служебная БД для хранения информации о DAG, task, их статусах, Connections, Variables, XCom и истории запусков. В production обычно используют PostgreSQL или MySQL, а SQLite подходит в основном для локальной разработки.
 
 </details>
 
+
+**14. Чем отличается Celery Executor и local executor?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+### Ответ
+
+Главное отличие **`LocalExecutor`** и **`CeleryExecutor`** — в том, где выполняются задачи.
+
+### LocalExecutor
+
+`LocalExecutor` запускает задачи **на той же машине, где работает Airflow**.
+
+При этом задачи могут выполняться **параллельно в отдельных процессах**.
+
+```text
+                 Airflow
+                    │
+             LocalExecutor
+          ┌─────────┼─────────┐
+          ↓         ↓         ↓
+       Task 1    Task 2    Task 3
+          │         │         │
+          └─────────┴─────────┘
+              одна машина
+```
+
+Например, если на сервере Airflow есть 8 CPU, несколько task могут одновременно выполняться на этом сервере.
+
+### CeleryExecutor
+
+`CeleryExecutor` позволяет распределять задачи **между несколькими worker-машинами**.
+
+Схема выглядит примерно так:
+
+```text
+                 Airflow
+                    │
+             CeleryExecutor
+                    │
+              Message Broker
+             (Redis / RabbitMQ)
+                    │
+        ┌───────────┼───────────┐
+        ↓           ↓           ↓
+    Worker 1    Worker 2    Worker 3
+        ↓           ↓           ↓
+     Task 1      Task 2      Task 3
+```
+
+Scheduler передаёт задачу Executor, Executor отправляет её в очередь, а свободный worker забирает задачу и выполняет её.
+
+### Основное отличие
+
+|                      | LocalExecutor              | CeleryExecutor                  |
+| -------------------- | -------------------------- | ------------------------------- |
+| Где выполняются task | На одной машине            | На нескольких worker            |
+| Параллельность       | Да                         | Да                              |
+| Масштабирование      | Ограничено одной машиной   | Можно добавлять worker          |
+| Broker               | Не нужен                   | Нужен, например Redis/RabbitMQ  |
+| Подходит для         | Небольших/средних нагрузок | Больших распределённых нагрузок |
+
+### Пример
+
+Допустим, у нас 100 task:
+
+```text
+LocalExecutor:
+
+Airflow Server
+├── Task 1
+├── Task 2
+├── Task 3
+├── ...
+└── Task 100
+```
+
+Все они выполняются на одном сервере, насколько позволяют его ресурсы и настройки параллельности.
+
+С `CeleryExecutor`:
+
+```text
+                Airflow
+                   ↓
+                Celery
+                   ↓
+             ┌─────┴─────┐
+             ↓     ↓     ↓
+          Worker1 Worker2 Worker3
+             ↓     ↓     ↓
+           Task  Task   Task
+```
+
+Можно добавить новые worker, и задачи будут распределяться между ними.
+
+### Коротко
+
+> `LocalExecutor` выполняет задачи параллельно на одной машине с Airflow. `CeleryExecutor` позволяет распределять задачи между несколькими worker-машинами через очередь сообщений, например Redis или RabbitMQ. Поэтому CeleryExecutor лучше подходит для масштабирования.
+
+</details>
 
 
 
