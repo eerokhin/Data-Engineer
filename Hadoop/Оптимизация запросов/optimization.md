@@ -1,6 +1,6 @@
-## Оптимизация запросов
+# Оптимизация запросов
 
-### Примеры кейсов
+## Примеры кейсов
 
 [Примеры можно посмотреть тут](https://github.com/eerokhin/DE_GPB/tree/main/impala_spill_optimization_partition_pruning)
 
