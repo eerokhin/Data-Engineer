@@ -2,139 +2,109 @@
 
 ## 1. Цель проекта
 
-Цель — развернуть локальную среду Apache Spark с помощью Docker и научиться:
+Учебный проект для знакомства с Apache Spark и PySpark на локальном компьютере с Windows.
 
-- запускать PySpark-приложения на Python;
-- понимать архитектуру Spark-кластера;
-- работать с DataFrame;
-- изучать Jobs, Stages, Tasks и Executors через Spark UI;
-- смотреть логи и диагностировать ошибки;
-- управлять контейнерами через Docker Compose.
+В рамках проекта мы:
+- запускаем Spark-кластер с помощью Docker Compose;
+- изучаем архитектуру Spark;
+- подключаем Python-приложение к кластеру;
+- создаём DataFrame и выполняем операции над данными;
+- изучаем Spark Web UI;
+- разбираемся в ленивых вычислениях;
+- учимся повторно запускать приложение после изменения кода.
 
 ## 2. Используемые технологии
 
-| Технология | Назначение |
-|---|---|
-| Docker Desktop | Запуск контейнеров |
-| Docker Compose | Управление несколькими контейнерами |
-| Apache Spark 4.0.1 | Распределённая обработка данных |
-| PySpark | Python API для Spark |
-| Spark Master | Координация кластера |
-| Spark Worker | Предоставление вычислительных ресурсов |
-| Spark UI | Мониторинг приложений и кластера |
-| Python 3 | Написание кода обработки данных |
+- Docker Desktop
+- Docker Compose
+- Apache Spark 4.0.1
+- PySpark
+- Python 3
+- Java 17
+- Windows и PowerShell
 
-Рабочая директория проекта:
-
-```text
-spark-learning/
-```
-
-## 3. Архитектура
-
-В проекте используются три контейнера:
-
-- `spark-master` — координатор кластера;
-- `spark-worker` — исполнитель, предоставляющий вычислительные ресурсы;
-- `spark-app` — контейнер, в котором запускается Python-приложение и работает Spark Driver.
-
-### Схема взаимодействия
-
-```text
-                    Docker Network
-                          |
-              +-----------------------+
-              |      Spark Master     |
-              |   spark-master:7077   |
-              |      Web UI: 8080     |
-              +-----------------------+
-                          |
-                  Регистрирует Worker
-                          |
-              +-----------------------+
-              |      Spark Worker     |
-              |      Web UI: 8081     |
-              |                       |
-              |  Запускает Executor    |
-              +-----------------------+
-                          |
-                   Выполнение задач
-                          |
-              +-----------------------+
-              |       Spark App       |
-              |                       |
-              |   Python / PySpark    |
-              |      Spark Driver     |
-              |      Spark UI: 4040   |
-              +-----------------------+
-```
-
-Это схема логического взаимодействия компонентов, а не строгая последовательность сетевых соединений: Driver также взаимодействует с Executor напрямую.
-
-### Spark Master
-
-Master управляет ресурсами кластера на уровне планирования приложений.
-
-Он:
-
-- принимает регистрацию Worker;
-- отслеживает доступные ресурсы;
-- принимает заявки приложений;
-- назначает ресурсы для запуска Executors.
-
-Master не выполняет непосредственно вычисления над DataFrame.
-
-<img width="1903" height="567" alt="image" src="https://github.com/user-attachments/assets/aa45a539-032b-4d90-ac3f-adbf970c2bd4" />
-
-
-### Spark Worker
-
-Worker предоставляет вычислительные ресурсы: CPU и память.
-
-Он:
-
-- регистрируется у Master;
-- сообщает о доступных ресурсах;
-- запускает Executors для приложений;
-- предоставляет информацию о выполняющихся процессах.
-
-<img width="1904" height="566" alt="image" src="https://github.com/user-attachments/assets/59ec7992-bd11-4499-bbcb-042b7fbd501f" />
-
-### Spark Driver
-
-Driver — управляющий компонент конкретного Spark-приложения.
-
-Он:
-
-- создаёт `SparkSession` и `SparkContext`;
-- формирует план выполнения;
-- разбивает вычисления на Jobs, Stages и Tasks;
-- координирует выполнение задач на Executors.
-
-В нашем проекте Driver работает внутри контейнера `spark-app`.
-
-### Spark Executor
-
-Executor — процесс, который выполняет задачи приложения и может хранить промежуточные данные в памяти или на диске.
-
-В нашей конфигурации Worker предоставляет два CPU-ядра, а приложение получает Executor с двумя ядрами и примерно 1 GiB памяти.
-
-Важно: Worker и Executor — не одно и то же. Worker является частью инфраструктуры кластера, а Executor относится к конкретному приложению.
-
-## 4. Структура проекта
+## 3. Структура проекта
 
 ```text
 spark-learning/
 ├── app/
 │   └── main.py
-└── docker-compose.yml
+├── docker-compose.yml
+└── README.md
 ```
 
-- `docker-compose.yml` описывает контейнеры, сеть и порты.
-- `app/main.py` содержит PySpark-код.
-- Каталог `app` подключается к контейнеру через volume, поэтому изменения файла доступны контейнеру без пересборки Docker-образа.
+- `docker-compose.yml` — конфигурация контейнеров.
+- `app/main.py` — Python-приложение на PySpark.
+- `README.md` — документация проекта.
 
-## 5. Полный docker-compose.yml
+## 4. Архитектура Spark
+
+В проекте используются Master, Worker, Driver и Executor.
+
+### Master
+
+Master управляет ресурсами кластера, принимает регистрацию Worker и помогает распределять ресурсы между приложениями.
+
+Master не выполняет непосредственно преобразования DataFrame.
+
+Адрес Master внутри Docker-сети:
+
+```text
+spark://spark-master:7077
+```
+
+Это внутренний адрес для подключения Spark-приложений, а не URL веб-страницы.
+
+### Worker
+
+Worker — рабочий узел, предоставляющий ресурсы для выполнения задач.
+
+В нашем проекте Worker настроен на:
+- 2 CPU cores;
+- 2 GiB памяти.
+
+### Driver
+
+Driver управляет выполнением конкретного Spark-приложения. Он формирует план вычислений, организует выполнение заданий и взаимодействует с Executor.
+
+В нашем проекте Driver запускается внутри контейнера `spark-app` вместе с Python-приложением.
+
+### Executor
+
+Executor выполняет задачи Spark и обрабатывает данные. Он запускается на Worker и взаимодействует с Driver.
+
+### Схема взаимодействия
+
+```text
+Python-код: app/main.py
+          |
+          v
+        Driver
+          |
+          v
+     Spark Master
+          |
+          v
+        Worker
+          |
+          v
+       Executor
+          |
+          v
+  Выполнение задач Spark
+```
+
+Важно различать роли:
+- Master управляет ресурсами кластера.
+- Driver управляет конкретным приложением.
+- Worker предоставляет вычислительные ресурсы.
+- Executor выполняет задачи.
+
+В нашем проекте один Worker. Это позволяет изучать устройство Spark, но пока не демонстрирует преимущества распределения вычислений между несколькими рабочими узлами.
+
+## 5. Полная конфигурация docker-compose.yml
+
+Файл `docker-compose.yml`:
 
 ```yaml
 services:
@@ -174,7 +144,8 @@ services:
 
   spark-app:
     image: spark:4.0.1-python3
-    container_name: spark-app
+    profiles:
+      - app
     command:
       - /opt/spark/bin/spark-submit
       - --master
@@ -197,7 +168,7 @@ networks:
     driver: bridge
 ```
 
-### Разбор конфигурации
+### Как работает конфигурация
 
 **`image`**
 
@@ -205,38 +176,48 @@ networks:
 image: spark:4.0.1-python3
 ```
 
-Используем Docker-образ Spark версии 4.0.1 с поддержкой Python.
+Docker использует образ Spark с Python. Если образ ещё не скачан, Docker загрузит его при необходимости.
 
 **`command`**
 
-Определяет команду, которая запускается внутри контейнера.
+Задаёт команду запуска компонента Spark внутри контейнера.
 
-Для Master и Worker используется `spark-class`, для приложения — `spark-submit`.
+Для Master запускается класс:
+
+```text
+org.apache.spark.deploy.master.Master
+```
+
+Для Worker запускается класс:
+
+```text
+org.apache.spark.deploy.worker.Worker
+```
+
+Worker получает адрес Master:
+
+```text
+spark://spark-master:7077
+```
 
 **`environment`**
 
-Настраивает компоненты Spark:
-
-- `SPARK_MASTER_PORT` — порт взаимодействия с Master;
-- `SPARK_MASTER_WEBUI_PORT` — порт веб-интерфейса Master;
-- `SPARK_WORKER_CORES` — число CPU-ядер, доступных Worker;
-- `SPARK_WORKER_MEMORY` — объём памяти, выделенный Worker;
-- `SPARK_WORKER_WEBUI_PORT` — порт веб-интерфейса Worker.
+Настраивает параметры компонентов. Например, `SPARK_WORKER_CORES` и `SPARK_WORKER_MEMORY` задают ресурсы, которые Worker предоставляет Spark.
 
 **`ports`**
 
-Формат:
+Связывает порты контейнера с портами Windows.
 
-```yaml
-ports:
-  - "8080:8080"
-```
+| Порт | Назначение |
+|---|---|
+| 8080 | Master Web UI |
+| 8081 | Worker Web UI |
+| 7077 | Подключение к Master |
+| 4040 | Application Web UI |
+| 7078 | Порт Driver |
+| 7079 | Порт Block Manager Driver |
 
-Первое число — порт на компьютере, второе — порт внутри контейнера.
-
-Публикация портов позволяет открывать веб-интерфейсы из браузера Windows.
-
-Порты `7078` и `7079` нужны для сетевого взаимодействия Driver и Executor. В этой конфигурации они опубликованы на хосте, а между контейнерами соединение происходит по внутренней Docker-сети.
+Порты 7078 и 7079 опубликованы для связи компонентов Spark в текущей Docker-конфигурации.
 
 **`volumes`**
 
@@ -245,30 +226,311 @@ volumes:
   - ./app:/app
 ```
 
-Подключает локальную папку `app` к папке `/app` внутри контейнера.
+Связывает локальную папку `app` с папкой `/app` внутри контейнера.
 
-Это позволяет редактировать `main.py` на компьютере, а затем запускать обновлённый код в контейнере.
+Поэтому после изменения `main.py` не нужно пересобирать Docker-образ.
 
 **`depends_on`**
 
-Задаёт порядок запуска контейнеров. Однако сам по себе `depends_on` не гарантирует, что Master уже полностью готов принимать подключения.
+Задаёт порядок запуска зависимостей. Однако сам по себе `depends_on` не гарантирует, что Master уже полностью готов принимать подключения.
 
 **`networks`**
 
+Все три сервиса подключаются к общей Docker-сети `spark-network` и могут обращаться друг к другу по именам сервисов.
+
+**`profiles`**
+
 ```yaml
-networks:
-  - spark-network
+profiles:
+  - app
 ```
 
-Все три контейнера подключены к общей Docker-сети. Поэтому они могут обращаться друг к другу по именам сервисов, например `spark-master` и `spark-app`.
+Сервис `spark-app` относится к отдельному профилю. Обычный запуск `docker compose up -d` не запускает его автоматически.
 
-## 6. Код приложения app/main.py
+## 6. Запуск проекта
+
+Все команды выполняются из корневой папки проекта `spark-learning`.
+
+### Запустить Master и Worker
+
+```powershell
+docker compose up -d
+```
+
+### Проверить контейнеры
+
+```powershell
+docker compose ps
+```
+
+Master и Worker должны находиться в состоянии `running`.
+
+### Посмотреть логи
+
+```powershell
+docker compose logs spark-master
+docker compose logs spark-worker
+```
+
+Для просмотра логов в реальном времени:
+
+```powershell
+docker compose logs -f spark-worker
+```
+
+Выход из просмотра логов — `Ctrl + C`. Это прекращает просмотр, а не останавливает контейнер.
+
+### Запустить Python-приложение
+
+```powershell
+docker compose run --rm --service-ports --name spark-app spark-app
+```
+
+Эта команда запускает отдельный контейнер для приложения.
+
+- `run` — запускает сервис в отдельном контейнере.
+- `--rm` — удаляет контейнер после завершения.
+- `--service-ports` — публикует порты сервиса.
+- `--name spark-app` — задаёт имя контейнера.
+
+Внутри контейнера выполняется команда `spark-submit`, которая запускает `app/main.py` и подключает приложение к Master.
+
+### Остановить приложение
+
+Если приложение запущено в текущем терминале, нажать:
+
+```text
+Ctrl + C
+```
+
+### Остановить кластер
+
+```powershell
+docker compose down
+```
+
+Эта команда останавливает и удаляет контейнеры проекта и созданную Compose сеть. Скачанные образы при этом не удаляются.
+
+## 7. Spark Web UI
+
+Spark предоставляет веб-интерфейсы для мониторинга кластера и приложений.
+
+| Интерфейс | Адрес | Назначение |
+|---|---|---|
+| Master UI | http://localhost:8080 | Состояние кластера |
+| Worker UI | http://localhost:8081 | Состояние рабочего узла |
+| Application UI | http://localhost:4040 | Выполнение приложения |
+
+### Master UI — порт 8080
+
+Показывает:
+- количество зарегистрированных Worker;
+- доступные CPU cores;
+- доступную память;
+- запущенные и завершённые приложения.
+
+Например:
+
+```text
+Workers: 1 Alive
+Cores: 2 Total
+Memory: 2.0 GiB Total
+```
+
+Это означает, что один Worker зарегистрирован, доступно два ядра CPU и 2 GiB памяти.
+
+### Worker UI — порт 8081
+
+Показывает информацию о конкретном Worker, его ресурсах и запущенных на нём приложениях или исполнителях.
+
+### Application UI — порт 4040
+
+Показывает выполнение конкретного приложения.
+
+Основные разделы:
+
+- **Jobs** — задания, запущенные приложением.
+- **Stages** — этапы выполнения заданий.
+- **Executors** — исполнители, их ресурсы и статистика.
+- **SQL / DataFrame** — планы и статистика SQL/DataFrame-операций, если раздел доступен.
+
+Application UI обычно доступен только во время работы приложения. Если приложение завершилось, страница может перестать открываться.
+
+В нашем приложении используется `time.sleep(600)`, чтобы после вычислений оставить приложение работающим примерно на 10 минут и дать время изучить UI.
+
+## 8. PySpark и DataFrame
+
+PySpark — Python API для Apache Spark. Он позволяет описывать обработку данных с помощью Python.
+
+DataFrame — распределённая коллекция данных с именованными столбцами и схемой. По смыслу он похож на таблицу в реляционной базе данных.
+
+### Создание SparkSession
+
+```python
+from pyspark.sql import SparkSession
+
+spark = (
+    SparkSession.builder
+    .appName("SparkLearning")
+    .master("spark://spark-master:7077")
+    .config("spark.driver.bindAddress", "0.0.0.0")
+    .config("spark.driver.host", "spark-app")
+    .config("spark.driver.port", "7078")
+    .config("spark.blockManager.port", "7079")
+    .getOrCreate()
+)
+```
+
+`SparkSession` — основная точка входа для работы с DataFrame и SQL в PySpark.
+
+- `appName()` задаёт имя приложения.
+- `master()` указывает адрес Spark-кластера.
+- `getOrCreate()` получает существующую сессию или создаёт новую.
+
+Сетевые настройки Driver нужны, чтобы компоненты Spark могли связываться друг с другом в Docker-сети.
+
+### Создание DataFrame
+
+```python
+df = spark.createDataFrame(
+    [
+        ("Alice", "Data Engineer", 100),
+        ("Bob", "Data Analyst", 80),
+        ("Charlie", "Data Engineer", 120),
+        ("Diana", "Data Scientist", 110),
+    ],
+    ["name", "role", "salary"],
+)
+```
+
+Данные создаются прямо в коде. Это учебный набор из четырёх строк, а не таблица из внешней базы данных.
+
+Исходный DataFrame:
+
+| name | role | salary |
+|---|---|---:|
+| Alice | Data Engineer | 100 |
+| Bob | Data Analyst | 80 |
+| Charlie | Data Engineer | 120 |
+| Diana | Data Scientist | 110 |
+
+### Показать данные
+
+```python
+df.show()
+```
+
+Выводит строки DataFrame в терминал.
+
+### Выбрать столбцы
+
+```python
+df.select("name", "salary").show()
+```
+
+Аналог SQL:
+
+```sql
+SELECT name, salary
+FROM employees;
+```
+
+### Отфильтровать строки
+
+```python
+from pyspark.sql.functions import col
+
+df.filter(col("salary") > 90).show()
+```
+
+Аналог SQL:
+
+```sql
+SELECT *
+FROM employees
+WHERE salary > 90;
+```
+
+Останутся Alice, Charlie и Diana.
+
+### Добавить вычисляемый столбец
+
+```python
+df.withColumn(
+    "salary_with_bonus",
+    col("salary") * 1.1
+).show()
+```
+
+`withColumn()` возвращает новый DataFrame с дополнительным столбцом. Исходный DataFrame не изменяется.
+
+### Группировка и средняя зарплата
+
+```python
+from pyspark.sql.functions import avg
+
+df.groupBy("role").agg(
+    avg("salary").alias("avg_salary")
+).show()
+```
+
+Результат:
+
+| role | avg_salary |
+|---|---:|
+| Data Analyst | 80 |
+| Data Engineer | 110 |
+| Data Scientist | 110 |
+
+`groupBy()` группирует строки по должности, а `avg()` вычисляет среднее значение зарплаты в каждой группе.
+
+## 9. Ленивые вычисления (Lazy Evaluation)
+
+В Spark многие преобразования не выполняются сразу. Spark сначала описывает операции, которые нужно выполнить.
+
+Например:
+
+```python
+filtered_df = df.filter(col("salary") > 90)
+```
+
+Эта строка обычно не запускает полное вычисление фильтра. Она создаёт описание преобразования.
+
+Когда вызывается:
+
+```python
+filtered_df.show()
+```
+
+Spark запускает необходимые вычисления, чтобы получить и показать результат.
+
+### Преобразования и действия
+
+**Преобразования (transformations):**
+- `select()`
+- `filter()`
+- `withColumn()`
+- `groupBy()` — формирует объект группировки для последующей агрегации.
+
+**Действия (actions):**
+- `show()`
+- `count()`
+- `collect()`
+- `write...`
+
+Действие запускает вычисления, необходимые для получения результата.
+
+Ленивое выполнение позволяет Spark строить и оптимизировать план обработки вместо немедленного выполнения каждого преобразования по отдельности.
+
+## 10. Полный код приложения
+
+Файл `app/main.py`:
 
 ```python
 import time
 
 from pyspark.sql import SparkSession
-
+from pyspark.sql.functions import col, avg
 
 spark = (
     SparkSession.builder
@@ -295,370 +557,113 @@ df = spark.createDataFrame(
     ["name", "role", "salary"],
 )
 
+print("=== Original DataFrame ===")
 df.show()
 
-df.groupBy("role").avg("salary").show()
+print("=== Select columns ===")
+df.select("name", "salary").show()
 
-print("Spark UI is available while the application is running.")
+print("=== Filter salary > 90 ===")
+df.filter(col("salary") > 90).show()
 
-time.sleep(300)
+print("=== Add salary bonus ===")
+df.withColumn(
+    "salary_with_bonus",
+    col("salary") * 1.1
+).show()
+
+print("=== Average salary by role ===")
+df.groupBy("role").agg(
+    avg("salary").alias("avg_salary")
+).show()
+
+print("Application is running. Open http://localhost:4040")
+
+time.sleep(600)
 
 spark.stop()
 ```
 
-### Что делает код
+## 11. Повторный запуск после изменения кода
 
-**1. Создаёт SparkSession**
+После изменения `app/main.py`:
 
-```python
-spark = (
-    SparkSession.builder
-    .appName("SparkLearning")
-    .master("spark://spark-master:7077")
-    # ...
-    .getOrCreate()
-)
-```
-
-`SparkSession` — основная точка входа для работы с DataFrame и SQL в PySpark.
-
-`appName()` задаёт название приложения, которое видно в интерфейсе Master.
-
-`master()` указывает адрес кластера, куда отправляется приложение.
-
-`getOrCreate()` возвращает существующую сессию или создаёт новую.
-
-**2. Настраивает сетевое взаимодействие Driver**
-
-```python
-.config("spark.driver.bindAddress", "0.0.0.0")
-.config("spark.driver.host", "spark-app")
-.config("spark.driver.port", "7078")
-.config("spark.blockManager.port", "7079")
-```
-
-- `spark.driver.bindAddress` определяет локальный сетевой адрес, на котором Driver принимает подключения.
-- `spark.driver.host` задаёт адрес, по которому другие компоненты должны обращаться к Driver.
-- `spark.driver.port` фиксирует порт RPC-сервиса Driver.
-- `spark.blockManager.port` фиксирует порт передачи блоков данных.
-
-Почему это важно: Driver находится в контейнере, и Executor должен иметь возможность подключиться к нему по сети. В Docker имя `spark-app` разрешается во внутренний IP-адрес контейнера.
-
-**3. Создаёт DataFrame**
-
-```python
-df = spark.createDataFrame(
-    [
-        ("Alice", "Data Engineer", 100),
-        ("Bob", "Data Analyst", 80),
-        ("Charlie", "Data Engineer", 120),
-        ("Diana", "Data Scientist", 110),
-    ],
-    ["name", "role", "salary"],
-)
-```
-
-Создаётся таблица с тремя колонками: имя, роль и зарплата.
-
-**4. Выводит данные**
-
-```python
-df.show()
-```
-
-Метод `show()` запускает вычисление, необходимое для получения строк, и выводит таблицу в логи приложения.
-
-**5. Группирует данные и вычисляет среднюю зарплату**
-
-```python
-df.groupBy("role").avg("salary").show()
-```
-
-Данные группируются по должности, после чего вычисляется среднее значение зарплаты для каждой группы.
-
-Это пример агрегирующей операции, для которой Spark строит и выполняет план вычислений.
-
-**6. Удерживает приложение запущенным**
-
-```python
-time.sleep(300)
-```
-
-Ожидание в течение 300 секунд, то есть пяти минут, нужно для изучения Spark UI.
-
-После ожидания выполняется:
-
-```python
-spark.stop()
-```
-
-Сессия останавливается, приложение завершается, а его веб-интерфейс на порту 4040 становится недоступен.
-
-## 7. Веб-интерфейсы Spark
-
-У каждого компонента свой интерфейс.
-
-| Адрес | Интерфейс | Что показывает |
-|---|---|---|
-| `http://localhost:8080` | Master UI | Worker, ресурсы кластера, приложения |
-| `http://localhost:8081` | Worker UI | Ресурсы Worker и Executors |
-| `http://localhost:4040` | Application UI | Jobs, Stages, Tasks, SQL/DataFrame, Executors |
-
-### Master UI — порт 8080
-
-Здесь можно проверить:
-
-- зарегистрирован ли Worker;
-- сколько CPU и памяти доступно;
-- какие приложения зарегистрированы;
-- состояние приложения.
-
-### Worker UI — порт 8081
-
-Здесь можно изучать состояние Worker, его ресурсы и запущенные Executors.
-
-### Application UI — порт 4040
-
-Это основной интерфейс для изучения выполнения PySpark-кода.
-
-Полезные вкладки:
-
-- **Jobs** — задания, инициированные действиями приложения;
-- **Stages** — этапы выполнения Jobs;
-- **Tasks** — отдельные задачи внутри Stage;
-- **Storage** — кэшированные данные;
-- **Environment** — настройки Spark;
-- **Executors** — состояние Executors, использование памяти и статистика задач;
-- **SQL/DataFrame** — планы выполнения SQL и DataFrame-операций.
-
-Вкладки могут отличаться в зависимости от версии Spark и того, какие операции выполнялись.
-
-### Как связаны Jobs, Stages и Tasks
-
-```text
-Action
-  |
-  v
- Job
-  |
-  v
-Stages
-  |
-  v
-Tasks
-```
-
-- **Job** создаётся, когда действие требует выполнения вычислений.
-- **Stage** — часть Job, объединяющая задачи с учётом границ обмена данными между этапами.
-- **Task** — единица работы над частью данных, выполняемая Executor.
-
-Например, `df.groupBy("role").avg("salary").show()` может приводить к нескольким этапам выполнения из-за агрегации и обмена данными.
-
-Не каждая строка Python создаёт отдельный Job: Spark использует ленивые вычисления и запускает необходимые вычисления при выполнении действий.
-
-## 8. Запуск проекта
-
-Все команды выполняются из директории `spark-learning`.
-
-### Проверить Docker
+1. Сохранить файл через `Ctrl + S`.
+2. Если предыдущий запуск ещё работает, остановить его через `Ctrl + C`.
+3. Запустить приложение повторно:
 
 ```powershell
-docker --version
-docker compose version
-docker info
+docker compose run --rm --service-ports --name spark-app spark-app
 ```
 
-### Проверить конфигурацию
+Master и Worker повторно запускать не нужно.
 
-```powershell
-docker compose config
-```
+Docker-образ пересобирать не требуется: код приложения подключён через volume.
 
-Эта команда проверяет и отображает итоговую конфигурацию Compose.
+## 12. Диагностика проблем
 
-Если YAML содержит ошибки или сервис вложен не в тот раздел, ошибка появится на этом этапе.
-
-### Запустить все контейнеры
-
-```powershell
-docker compose up -d
-```
-
-Флаг `-d` запускает контейнеры в фоновом режиме.
-
-### Проверить состояние
+### Проверить состояние контейнеров
 
 ```powershell
 docker compose ps
 ```
 
-Для просмотра также завершившихся контейнеров:
+### Проверить логи Master
+
+```powershell
+docker compose logs spark-master
+```
+
+### Проверить логи Worker
+
+```powershell
+docker compose logs spark-worker
+```
+
+### Посмотреть все контейнеры, включая завершённые
 
 ```powershell
 docker compose ps -a
 ```
 
-### Посмотреть логи приложения
+### Удалить остановленный контейнер приложения
 
 ```powershell
-docker compose logs -f spark-app
+docker compose rm -f spark-app
 ```
 
-`-f` означает непрерывный просмотр новых строк логов.
+Команда удаляет остановленный контейнер сервиса, но не удаляет исходный `app/main.py`.
 
-Чтобы выйти из просмотра логов, нажми `Ctrl+C`. Это прекращает просмотр, но само по себе не останавливает контейнер.
+### Предупреждение `Initial job has not accepted any resources`
 
-### Открыть интерфейсы
+Оно означает, что Spark пока не смог назначить ресурсы для выполнения задания.
 
-После запуска:
+Проверить:
+1. Master UI — зарегистрирован ли Worker.
+2. Достаточно ли свободных CPU и памяти.
+3. Логи приложения и Worker.
+4. Связь Executor с Driver.
 
-1. Открой `http://localhost:8080`.
-2. Убедись, что Worker зарегистрирован.
-3. Открой `http://localhost:8081`.
-4. Открой `http://localhost:4040`, пока работает приложение.
+Если Worker отображается как `ALIVE`, это подтверждает регистрацию Worker, но само по себе не гарантирует, что Executor сможет подключиться к Driver.
 
-## 9. Остановка и повторный запуск
+## 13. Что изучать дальше
 
-### Остановить и удалить контейнеры проекта
+1. Партиции DataFrame.
+2. `repartition()` и `coalesce()`.
+3. Логический и физический планы через `explain()`.
+4. Shuffle и его влияние на производительность.
+5. Чтение и запись CSV и Parquet.
+6. Spark SQL и сравнение с PySpark DataFrame API.
+7. Работа с несколькими Worker.
+8. Оптимизация Spark-приложений.
 
-```powershell
-docker compose down
-```
+## 14. Ключевые выводы
 
-Команда останавливает и удаляет контейнеры проекта и созданную Compose сеть. Docker-образы при обычном выполнении этой команды остаются на компьютере.
-
-### Запустить кластер и приложение заново
-
-```powershell
-docker compose up -d
-```
-
-При необходимости принудительно пересоздать контейнер приложения:
-
-```powershell
-docker compose up -d --force-recreate spark-app
-```
-
-Затем посмотреть логи:
-
-```powershell
-docker compose logs -f spark-app
-```
-
-## 10. Ошибки, с которыми столкнулись
-
-### Ошибка 1. Неправильные отступы в docker-compose.yml
-
-Сообщение:
-
-```text
-services.spark-worker additional properties 'spark-app' not allowed
-```
-
-Причина: сервис `spark-app` был помещён внутрь блока `spark-worker`, вместо того чтобы находиться на одном уровне с ним.
-
-Неправильно:
-
-```yaml
-services:
-  spark-worker:
-    # настройки Worker
-    spark-app:
-      # настройки приложения
-```
-
-Правильно:
-
-```yaml
-services:
-  spark-worker:
-    # настройки Worker
-
-  spark-app:
-    # настройки приложения
-```
-
-В YAML отступы определяют структуру документа.
-
-### Ошибка 2. Driver не мог привязаться к сетевому адресу
-
-Сообщение:
-
-```text
-java.net.BindException: Cannot assign requested address
-```
-
-Причина: в настройке `spark.driver.host` был указан адрес `spark-master`, хотя Driver работает в контейнере `spark-app`.
-
-Исправление:
-
-```python
-.config("spark.driver.bindAddress", "0.0.0.0")
-.config("spark.driver.host", "spark-app")
-.config("spark.driver.port", "7078")
-.config("spark.blockManager.port", "7079")
-```
-
-После этого Driver смог запуститься, подключиться к Master и зарегистрировать BlockManager.
-
-### Ошибка 3. Spark UI перестал открываться
-
-Причина: приложение содержало ожидание:
-
-```python
-time.sleep(300)
-```
-
-Через пять минут выполнение продолжалось до `spark.stop()`, после чего приложение завершалось.
-
-Это ожидаемое поведение: Spark Application UI доступен, пока работает приложение.
-
-При этом Master и Worker могут продолжать работать, а их интерфейсы на портах 8080 и 8081 останутся доступными.
-
-### Как диагностировать проблемы
-
-Сначала:
-
-```powershell
-docker compose ps -a
-```
-
-Затем:
-
-```powershell
-docker compose logs --tail=50 spark-app
-```
-
-При проблемах с Master или Worker:
-
-```powershell
-docker compose logs --tail=50 spark-master
-docker compose logs --tail=50 spark-worker
-```
-
-Эти команды помогают понять, завершился ли контейнер, возникла ли ошибка запуска или приложение работает, но не выполняет ожидаемые операции.
-
-## 11. Что изучать дальше
-
-1. Создать DataFrame из CSV-файла.
-2. Научиться применять `select`, `filter`, `withColumn` и `groupBy`.
-3. Изучить разницу между transformations и actions.
-4. Посмотреть, когда появляются Jobs и Stages.
-5. Выполнить `join` двух DataFrame и изучить план выполнения.
-6. Сравнить `explain()` и визуальный план в Spark UI.
-7. Изучить `repartition`, `coalesce` и shuffle.
-8. Проверить, как меняются Tasks при разном количестве партиций.
-9. Поэкспериментировать с `cache()` и `persist()`.
-10. Научиться читать статистику Executors и находить узкие места.
-
-## Итог
-
-В результате мы развернули локальный Spark-кластер в Docker, подключили Python-приложение к Master, запустили вычисления на Worker и получили доступ к интерфейсам мониторинга.
-
-Ключевое различие:
-
-- Master управляет ресурсами кластера.
-- Worker предоставляет ресурсы для выполнения вычислений.
-- Driver координирует выполнение конкретного приложения.
-- Executor выполняет задачи приложения.
-- Spark UI позволяет наблюдать за работой кластера и приложения.
+- Docker запускает инфраструктуру Spark в контейнерах.
+- Master управляет ресурсами, Worker предоставляет их.
+- Driver управляет приложением, Executor выполняет задачи.
+- PySpark позволяет обрабатывать данные с помощью Python.
+- DataFrame предоставляет операции, похожие на SQL.
+- Ленивые вычисления позволяют Spark оптимизировать выполнение операций.
+- Spark UI показывает состояние кластера и ход выполнения приложения.
+- Изменённый Python-код можно запускать повторно без пересборки Docker-образа.
