@@ -441,6 +441,8 @@ df.groupBy("role").agg(
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
 
+## 1. Архитектура выполнения задач
+
 Что происходит при запуске Spark-приложения на кластере. Когда в распоряжении Spark находится несколько узлов, или серверов, которые можно использовать для распределённых вычислений, большую задачу можно разбить между этими узлами. Так можно быстрее получить результат расчётов.
 
 Итак, чтобы взаимодействовать со Spark, нужно в первую очередь создать (инициализировать) Spark-приложение с помощью Spark-сессии.
@@ -453,9 +455,9 @@ df.groupBy("role").agg(
 
 <img width="1342" height="759" alt="Снимок экрана 2026-10-18 141257" src="https://github.com/user-attachments/assets/719812fc-734a-4032-b3d1-43407adff5f3" />
 
-<img width="1339" height="543" alt="image" src="https://github.com/user-attachments/assets/32b94431-080b-4e2c-a928-97326f24ffd3" />
-
 ## 2. Job, Stage, Task и Partition
+
+<img width="1339" height="543" alt="image" src="https://github.com/user-attachments/assets/32b94431-080b-4e2c-a928-97326f24ffd3" />
 
 ### Job — вычисление
 
