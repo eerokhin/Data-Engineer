@@ -455,35 +455,6 @@ df.groupBy("role").agg(
 
 <img width="1339" height="543" alt="image" src="https://github.com/user-attachments/assets/32b94431-080b-4e2c-a928-97326f24ffd3" />
 
-# Apache Spark — архитектура и выполнение задач
-
-## 1. Общая архитектура
-
-Spark распределяет обработку больших объёмов данных между исполнителями (**Executors**).
-
-```mermaid
-flowchart TD
-    A["PySpark-код"] --> B["Driver"]
-    B --> C["Планирование выполнения"]
-    C --> D["Job"]
-    D --> E["Stage"]
-    E --> F["Tasks"]
-    F --> G["Executors"]
-    G --> H["Обработка данных"]
-    
-    I["Cluster Manager"] -. "Выделяет ресурсы" .-> G
-```
-
-### Основные компоненты
-
-| Компонент | Что делает |
-|---|---|
-| **Driver** | Управляет приложением, строит план вычислений и распределяет задачи. |
-| **Cluster Manager** | Выделяет ресурсы и запускает Executors. |
-| **Executor** | Выполняет задачи над данными и использует выделенные CPU и память. |
-
-**Важно:** Job, Stage и Task — это уровни организации вычислений. Executor — процесс, который выполняет Tasks.
-
 ## 2. Job, Stage, Task и Partition
 
 ### Job — вычисление
