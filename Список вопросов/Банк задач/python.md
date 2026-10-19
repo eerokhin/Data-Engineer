@@ -156,6 +156,8 @@ print(sequence_3)
 
 <details>
 <summary>Решение</summary>
+
+```python  
 def par_search(file_path: str, n: int) -> None:
     if n <= 0:
         raise ValueError("n должно быть положительным числом")
@@ -168,6 +170,7 @@ def par_search(file_path: str, n: int) -> None:
 
 file_path = "C:/Users/erohi/Desktop/test/example.txt"
 par_search(file_path, 1)
+```
 
 </details>
 
