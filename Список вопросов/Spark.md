@@ -608,7 +608,7 @@ Worker Node 2
 
 </details>
 
-**8. Может ли на одном узле быть несколько исполнителей(executor)?**
+**8. Пример расчёта ресурсов Apache Spark?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
