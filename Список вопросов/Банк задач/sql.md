@@ -190,9 +190,9 @@ entrance | floor | flat | num_persons
 Найти все подъезды и этажи, на которых суммарно проживает больше 5 человек.
 
 Вывести:
-• entrance - подъезд;
-• floor - этаж;
-• num_persons_by_floor - суммарное количество людей на этаже.
+- entrance - подъезд;
+- floor - этаж;
+- num_persons_by_floor - суммарное количество людей на этаже.
 
 <details>
 <summary>Решение</summary>
@@ -213,9 +213,9 @@ having sum(num_persons) > 5
 
 Вывести:
 
-• entrance - подъезд;
-• floor - этаж;
-• max_num_persons - максимальное количество людей.
+- entrance - подъезд;
+- floor - этаж;
+- max_num_persons - максимальное количество людей.
 
 <details>
 <summary>Решение</summary>
@@ -265,9 +265,9 @@ WHERE num_persons_by_floor = (
 
 Вывести:
 
-• entrance - подъезд;
-• floor - этаж;
-• top_num_persons - количество людей на этаже.
+- entrance - подъезд;
+- floor - этаж;
+- top_num_persons - количество людей на этаже.
 
 <details>
 <summary>Решение</summary>
