@@ -157,16 +157,14 @@ HAVING COUNT(*) >= 2
 
 ## Задача с собеседования на 350к
 
-**Задача 1**
-
 В таблице хранится информация о квартирах, этажах и количестве людей:
 
-`entrance` - Номер подъезда
-`floor` - Номер этажа
-`flat` -  Номер квартиры
-`num_persons` - Количество человек в квартире
+- `entrance` - Номер подъезда
+- `floor` - Номер этажа
+- `flat` -  Номер квартиры
+- `num_persons` - Количество человек в квартире
 
-
+```text
 entrance | floor | flat | num_persons
 ---------+-------+------+------------
 1 | 1 | 1 | 4
@@ -183,11 +181,122 @@ entrance | floor | flat | num_persons
 2 | 2 | 12 | 5
 ...
 8 | 4 | 64 | 4
+```
 
 В исходном примере данные показаны частично, поэтому многоточие означает продолжение таблицы.
 
+**Задача 1**
+
+Найти все подъезды и этажи, на которых суммарно проживает больше 5 человек.
+
+Вывести:
+• entrance - подъезд;
+• floor - этаж;
+• num_persons_by_floor - суммарное количество людей на этаже.
+
 <details>
 <summary>Решение</summary>
+
+```sql
+select entrance, floor, sum(num_persons) as num_persons_by_floor
+from table
+group by entrance, floor
+having sum(num_persons) > 5
+```
+
+</details> 
+
+
+**Задача 2**
+
+Найти подъезд и этаж с самым большим суммарным количеством людей.
+
+Вывести:
+
+• entrance - подъезд;
+• floor - этаж;
+• max_num_persons - максимальное количество людей.
+
+<details>
+<summary>Решение</summary>
+
+```sql
+with t1 as (
+            select entrance,
+                   floor,
+                   sum(num_persons) as num_persons_by_floor
+            from table
+            group by entrance, floor
+            )
+select
+      entrance,
+      floor,
+      num_persons_by_floor AS max_num_persons
+from t1
+order by num_persons_by_floor desc
+limit 1;
+
+--2 var
+WITH t1 AS (
+    SELECT
+        entrance,
+        floor,
+        SUM(num_persons) AS num_persons_by_floor
+    FROM table
+    GROUP BY entrance, floor
+)
+SELECT
+    entrance,
+    floor,
+    num_persons_by_floor AS max_num_persons
+FROM t1
+WHERE num_persons_by_floor = (
+    SELECT MAX(num_persons_by_floor)
+    FROM t1
+);
+
+```
+
+</details> 
+
+**Задача 3**
+
+Для каждого подъезда вывести три самых густонаселённых этажа.
+
+Вывести:
+
+• entrance - подъезд;
+• floor - этаж;
+• top_num_persons - количество людей на этаже.
+
+<details>
+<summary>Решение</summary>
+
+```sql
+
+WITH t1 AS (
+    SELECT
+        entrance,
+        floor,
+        SUM(num_persons) AS num_persons_by_floor
+    FROM table
+    GROUP BY entrance, floor
+),
+t2 AS (
+    SELECT
+        entrance,
+        floor,
+        num_persons_by_floor,
+        ROW_NUMBER() OVER (PARTITION BY entrance ORDER BY num_persons_by_floor DESC) AS rn
+    FROM t1
+)
+SELECT
+    entrance,
+    floor,
+    num_persons_by_floor AS top_num_persons
+FROM t2
+WHERE rn <= 3;
+```
 
 </details> 
 
