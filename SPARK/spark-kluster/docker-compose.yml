@@ -1,0 +1,87 @@
+
+services:
+  spark-master:
+    image: spark:4.0.1-python3
+    container_name: spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+    environment:
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: "7077"
+      SPARK_MASTER_WEBUI_PORT: "8080"
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - spark-network
+    restart: unless-stopped
+
+  spark-worker:
+    image: spark:4.0.1-python3
+    container_name: spark-worker
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - --cores
+      - "2"
+      - --memory
+      - 2g
+      - --webui-port
+      - "8081"
+      - spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    networks:
+      - spark-network
+    restart: unless-stopped
+
+  spark-worker-2:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-2
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - --cores
+      - "2"
+      - --memory
+      - 2g
+      - --webui-port
+      - "8082"
+      - spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - "8082:8082"
+    networks:
+      - spark-network
+    restart: unless-stopped
+
+  spark-jupyter:
+    build:
+      context: ./jupyter
+    container_name: spark-jupyter
+    environment:
+      SPARK_MASTER_URL: spark://spark-master:7077
+      PYSPARK_PYTHON: python3
+    volumes:
+      - ./notebooks:/home/spark/work
+      - ./data:/home/spark/data
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+      - "7078:7078"
+      - "7079:7079"
+    depends_on:
+      - spark-master
+      - spark-worker
+      - spark-worker-2
+    networks:
+      - spark-network
+    restart: unless-stopped
+
+networks:
+  spark-network:
+    driver: bridge
