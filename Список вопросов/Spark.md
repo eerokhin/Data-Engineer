@@ -1300,3 +1300,110 @@ Lineage описывает зависимость результата от пр
 Lineage в Spark — это информация о зависимостях между исходными данными и последовательностью преобразований, из которых получен результат. Spark использует её для восстановления потерянных партиций после сбоев. Checkpoint позволяет обрезать длинный lineage, сохранив промежуточный результат в надёжном хранилище.
 
 </details>
+
+**18. Что такое SparkConf, SparkContext и SparkSession?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+# SparkConf, SparkContext и SparkSession
+
+## 1. SparkConf
+
+`SparkConf` — объект для настройки параметров Spark перед запуском приложения.
+
+```python
+from pyspark import SparkConf
+
+conf = SparkConf().setAll([
+    ("spark.executor.memory", "2g"),
+    ("spark.executor.cores", "2")
+])
+```
+
+## 2. SparkContext
+
+`SparkContext` — низкоуровневый интерфейс для взаимодействия с вычислительным движком Spark. Позволяет создавать и обрабатывать RDD.
+
+**RDD** — распределенная коллекция объектов, с которой Spark может выполнять вычисления параллельно.
+
+Пример агрегации через RDD:
+
+```python
+rdd = sc.parallelize([
+    ("IT", 100),
+    ("IT", 150),
+    ("HR", 80)
+])
+
+result = rdd.reduceByKey(lambda a, b: a + b)
+
+print(result.collect())
+```
+
+Результат:
+
+```text
+[('IT', 250), ('HR', 80)]
+```
+
+У `SparkContext` нет метода `groupBy()` для группировки DataFrame. Для RDD используются другие методы, например `reduceByKey()`.
+
+## 3. SparkSession
+
+`SparkSession` — основной интерфейс для работы с DataFrame и SQL в PySpark.
+
+Позволяет читать данные, фильтровать строки, выполнять JOIN, группировки и агрегации.
+
+Пример агрегации через DataFrame:
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import sum
+
+spark = (
+    SparkSession.builder
+    .appName("MyApp")
+    .master("local[*]")
+    .getOrCreate()
+)
+
+df = spark.createDataFrame([
+    ("Анна", "IT", 100),
+    ("Иван", "IT", 150),
+    ("Олег", "HR", 80)
+], ["employee", "department", "salary"])
+
+df.groupBy("department").agg(
+    sum("salary").alias("total_salary")
+).show()
+```
+
+Результат:
+
+```text
++----------+------------+
+|department|total_salary|
++----------+------------+
+|        IT|         250|
+|        HR|          80|
++----------+------------+
+```
+
+## 4. Основные различия
+
+| Объект | Назначение |
+|---|---|
+| `SparkConf` | Настройка параметров Spark |
+| `SparkContext` | Работа с RDD и низкоуровневое взаимодействие с Spark |
+| `SparkSession` | Работа с DataFrame и SQL |
+
+**Важно:** `SparkSession` использует `SparkContext` внутри себя. Обычно достаточно создать `SparkSession` — если контекст ещё не создан, Spark создаст его автоматически.
+
+## Кратко для собеседования
+
+- `SparkConf` — настраивает приложение Spark.
+- `SparkContext` — позволяет работать с RDD.
+- `SparkSession` — основной интерфейс для обработки табличных данных через DataFrame API и SQL.
+
+</details>
