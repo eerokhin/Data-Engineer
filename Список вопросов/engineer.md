@@ -792,7 +792,7 @@ JOIN users u
 
 </details>
 
-**11. ?**
+**11. Какие подходы построения хранилищ данных бывают??**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
