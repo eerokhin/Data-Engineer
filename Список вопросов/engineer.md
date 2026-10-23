@@ -993,7 +993,7 @@ GROUP BY
 
 </details>
 
-**12. Объясни подход Кимбалла?**
+**13. Объясни подход Кимбалла?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
