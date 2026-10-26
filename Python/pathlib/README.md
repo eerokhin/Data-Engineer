@@ -248,3 +248,122 @@ if not path.exists():
 ```
 
 Позволяет явно сообщить об отсутствии необходимого файла или директории.
+
+
+# `read_text()` в Python
+
+`read_text()` — метод объекта `Path`, который **читает содержимое текстового файла и возвращает его в виде строки (`str`)**.
+
+## 1. Простой пример
+
+Допустим, есть файл `query.sql`:
+
+```sql
+SELECT *
+FROM employees
+WHERE department = 'IT';
+```
+
+Читаем его содержимое:
+
+```python
+from pathlib import Path
+
+path = Path("query.sql")
+
+sql = path.read_text()
+
+print(sql)
+```
+
+Результат — содержимое файла в виде строки:
+
+```python
+"SELECT *\nFROM employees\nWHERE department = 'IT';\n"
+```
+
+Символ `\n` обозначает перенос строки.
+
+## 2. Чтение файла относительно текущего Python-скрипта
+
+В проектах Airflow SQL-запросы часто хранятся в отдельных файлах.
+
+```python
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+SQL_PATH = BASE_DIR / "query.sql"
+
+sql = SQL_PATH.read_text(encoding="utf-8")
+```
+
+Что здесь происходит:
+
+1. `Path(__file__).resolve().parent` получает путь к папке текущего Python-файла.
+2. `BASE_DIR / "query.sql"` формирует путь к SQL-файлу.
+3. `read_text(encoding="utf-8")` читает файл и возвращает его содержимое как строку.
+
+Теперь переменная `sql` содержит SQL-запрос, который можно передать в `cursor.execute(sql)` или использовать в другом подходящем инструменте выполнения SQL.
+
+## 3. Зачем нужен `encoding="utf-8"`?
+
+Кодировка определяет, как байты файла преобразуются в текст.
+
+```python
+sql = SQL_PATH.read_text(encoding="utf-8")
+```
+
+`utf-8` — распространённая кодировка, поддерживающая в том числе русские буквы.
+
+Явное указание кодировки помогает избежать проблем с чтением текста на разных компьютерах.
+
+## 4. Что будет, если файла нет?
+
+```python
+from pathlib import Path
+
+path = Path("query.sql")
+
+sql = path.read_text(encoding="utf-8")
+```
+
+Если файл отсутствует, Python выбросит исключение `FileNotFoundError`.
+
+Поэтому при необходимости можно сначала проверить существование:
+
+```python
+if not path.exists():
+    raise FileNotFoundError(f"Файл не найден: {path}")
+
+sql = path.read_text(encoding="utf-8")
+```
+
+## 5. Чем `read_text()` отличается от `open().read()`?
+
+Оба варианта читают файл целиком и возвращают строку.
+
+**Через `Path`:**
+
+```python
+sql = Path("query.sql").read_text(encoding="utf-8")
+```
+
+**Через `open()`:**
+
+```python
+with open("query.sql", encoding="utf-8") as file:
+    sql = file.read()
+```
+
+Первый вариант короче, второй удобен, когда нужно дополнительно работать с открытым файловым объектом.
+
+## Кратко
+
+| Метод | Назначение |
+|---|---|
+| `path.exists()` | Проверяет существование пути |
+| `path.read_text()` | Читает весь текстовый файл в строку |
+| `path.write_text()` | Записывает строку в файл |
+
+Главное: `read_text()` **не выполняет SQL-запрос**, а только читает его текст из файла.
