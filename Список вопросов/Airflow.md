@@ -1275,7 +1275,8 @@ Airflow Server
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
- # PythonSensor в Apache Airflow
+
+# PythonSensor в Apache Airflow
 
 `PythonSensor` — это сенсор Airflow, который периодически вызывает Python-функцию и ждёт, пока она вернёт `True`.
 
