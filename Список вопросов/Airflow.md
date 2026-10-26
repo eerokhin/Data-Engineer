@@ -1519,4 +1519,85 @@ wait_for_sources = PythonSensor(
 - `retry_delay` — задержка между повторными попытками.
 
 **Главная идея:** сенсор позволяет организовать зависимость между подготовкой источников и запуском ETL, не начиная обработку раньше времени.       
+
+</details>
+
+
+**16. Использовал ли ветвление (Branching)?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+Да, использовал.
+
+## Branching (ветвление) в Apache Airflow
+
+**Branching** — механизм, который позволяет выбирать дальнейший путь выполнения DAG в зависимости от определённого условия.
+
+В своём DAG я использовал `BranchPythonOperator`, чтобы разделить логику сборки витрины на два сценария:
+
+- **Первичная сборка** — создаётся итоговая витрина с нуля с помощью задачи `create_mart`. Тоесть выполняется DROP, CREATE итоговой витрины, первичная сборка, когда витирны еще нет.
+- **Инкрементальное обновление** — создание витрины пропускается, выполнение продолжается с задачи `incremental_start`. Тоесть DROP, CREATE итоговой витрины не делаю, так как в ней уже есть данные, и новые данные добавляю инкрементом, повторная сборка.
+
+Для выбора сценария используется функция `choose_calculation_mode`, которая возвращает `task_id` следующей задачи в зависимости от того, нужна первичная сборка или инкрементальное обновление.
+
+### Пример
+
+```python
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.python import (BranchPythonOperator,PythonOperator,)
+from airflow.operators.empty import EmptyOperator
+
+CREATE_SQL = "/opt/airflow/sql/create_mart.sql"
+
+# Функция выбора сценария
+def choose_calculation_mode():
+    if is_first_run():
+        return "create_mart"
+    return "incremental_start"
+
+def is_first_run():
+    # Пример условной проверки
+    return True
+
+def execute_sql_file(file_path, **context):
+    print(f"Выполняем SQL-файл: {file_path}")
+
+
+with DAG(
+    dag_id="example_branching",
+    start_date=datetime(2026, 1, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    # Выбираем первичную сборку или инкрементальный режим
+    choose_mode = BranchPythonOperator(
+        task_id="choose_calculation_mode",
+        python_callable=choose_calculation_mode,
+    )
+
+    # Первичная сборка витрины
+    create_mart = PythonOperator(
+        task_id="create_mart",
+        python_callable=execute_sql_file,
+        op_kwargs={"file_path": CREATE_SQL},
+    )
+
+    # Точка входа в инкрементальный сценарий
+    incremental_start = EmptyOperator(
+        task_id="incremental_start",
+    )
+
+    # Связи между задачами
+    choose_mode >> [create_mart, incremental_start]
+```
+
+
+
+Здесь `is_first_run()` — условная проверка, иллюстрирующая принцип работы.
+
+Таким образом, ветвление позволяет **использовать один DAG для первичной сборки и последующих инкрементальных обновлений**, не выполняя создание витрины заново при каждом запуске.
+
 </details>
