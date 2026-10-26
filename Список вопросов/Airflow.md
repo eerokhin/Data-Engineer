@@ -1711,6 +1711,8 @@ with DAG(
     merge_branches >> update_mart
 ```
 
+<img width="1077" height="240" alt="image" src="https://github.com/user-attachments/assets/c12f8ef4-e5bf-45f8-a55d-77dfaf6ad31f" />
+
 ### Как работает DAG
 
 1. `choose_calculation_mode` выбирает одну из двух веток.
