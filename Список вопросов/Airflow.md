@@ -1601,3 +1601,127 @@ with DAG(
 Таким образом, ветвление позволяет **использовать один DAG для первичной сборки и последующих инкрементальных обновлений**, не выполняя создание витрины заново при каждом запуске.
 
 </details>
+
+
+**17. Что такое Trigger Rule в Apache Airflow?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+## Trigger Rule в Apache Airflow
+
+**`trigger_rule`** — это правило, которое определяет, при каких статусах upstream-задач (предшествующих задач) может запуститься текущая задача.
+
+### Зачем нужен `trigger_rule`?
+
+Например, мы используем **Branching (ветвление)**. Airflow выбирает одну ветку, а другую пропускает — она получает статус `skipped`.
+
+Но нам нужно продолжить выполнение DAG и запустить следующую задачу, которая объединяет ветки.
+
+По умолчанию Airflow использует правило `all_success`:
+
+| Правило | Условие запуска |
+|---|---|
+| `all_success` *(по умолчанию)* | Все upstream-задачи завершились со статусом `success`. |
+| `none_failed_min_one_success` | Нет задач со статусами `failed` или `upstream_failed`, и хотя бы одна задача завершилась со статусом `success`. |
+| `all_done` | Все upstream-задачи завершились, независимо от их статусов. |
+| `one_success` | Хотя бы одна upstream-задача завершилась со статусом `success`. |
+| `one_failed` | Хотя бы одна upstream-задача завершилась со статусом `failed` или `upstream_failed`. |
+| `none_failed` | Все upstream-задачи завершились, и ни одна не имеет статуса `failed` или `upstream_failed`. |
+| `all_skipped` | Все upstream-задачи имеют статус `skipped`. |
+
+При ветвлении одна задача может завершиться со статусом `success`, а другая — `skipped`. В таком случае `all_success` не позволит запустить следующую задачу, а `none_failed_min_one_success` позволит, если выполнены его условия.
+
+### Пример DAG с Branching и Trigger Rule
+
+В примере DAG выбирает режим сборки витрины, затем объединяет ветки и запускает `update_mart`.
+
+```python
+from datetime import datetime
+
+from airflow import DAG
+from airflow.operators.python import (
+    BranchPythonOperator,
+    PythonOperator,
+)
+from airflow.operators.empty import EmptyOperator
+
+
+CREATE_SQL = "/opt/airflow/sql/create_mart.sql"
+INCREMENT_SQL = "/opt/airflow/sql/increment_mart.sql"
+
+
+# Выбираем первичную сборку или инкрементальное обновление.
+def choose_calculation_mode():
+    if is_first_run():
+        return "create_mart"
+    return "incremental_start"
+
+
+def is_first_run():
+    # Пример условной проверки.
+    return True
+
+
+def execute_sql_file(file_path, **context):
+    print(f"Выполняем SQL-файл: {file_path}")
+
+
+with DAG(
+    dag_id="example_branching_trigger_rule",
+    start_date=datetime(2026, 1, 1),
+    schedule=None,
+    catchup=False,
+) as dag:
+
+    # Выбираем ветку выполнения.
+    choose_mode = BranchPythonOperator(
+        task_id="choose_calculation_mode",
+        python_callable=choose_calculation_mode,
+    )
+
+    # Первичная сборка витрины.
+    create_mart = PythonOperator(
+        task_id="create_mart",
+        python_callable=execute_sql_file,
+        op_kwargs={"file_path": CREATE_SQL},
+    )
+
+    # Точка входа в инкрементальный сценарий.
+    incremental_start = EmptyOperator(
+        task_id="incremental_start",
+    )
+
+    # Объединяем ветки после выбора режима.
+    merge_branches = EmptyOperator(
+        task_id="merge_branches",
+        trigger_rule="none_failed_min_one_success",
+    )
+
+    # Продолжаем обработку после объединения веток.
+    update_mart = PythonOperator(
+        task_id="update_mart",
+        python_callable=execute_sql_file,
+        op_kwargs={"file_path": INCREMENT_SQL},
+    )
+
+    # Связываем задачи.
+    choose_mode >> [create_mart, incremental_start]
+    [create_mart, incremental_start] >> merge_branches
+    merge_branches >> update_mart
+```
+
+### Как работает DAG
+
+1. `choose_calculation_mode` выбирает одну из двух веток.
+2. Если это первичная сборка, выполняется `create_mart`.
+3. Если это инкрементальный запуск, выполняется `incremental_start`.
+4. Не выбранная ветка получает статус `skipped`.
+5. `merge_branches` запускается благодаря `none_failed_min_one_success`.
+6. После объединения выполняется `update_mart`.
+
+**Главное, что нужно запомнить:** `trigger_rule` управляет условиями запуска задачи на основе статусов её upstream-задач. При ветвлении он позволяет корректно продолжить выполнение DAG после выбора одной ветки.
+
+В примере `is_first_run()` и `execute_sql_file()` — демонстрационные функции. В реальном DAG их нужно заменить проверкой режима сборки и реализацией выполнения SQL в Impala.
+
+</details>
