@@ -1296,7 +1296,7 @@ HR-система ────────┘
 
 </details>
 
-**17. В чем разница Data Vault 1.0 и Data Vault 2.0?**
+**15. В чем разница Data Vault 1.0 и Data Vault 2.0?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
@@ -1340,7 +1340,7 @@ HR-система ────────┘
 
 </details>
 
-**15. Объясни подход Anchor Modeling?**
+**16. Объясни подход Anchor Modeling?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
@@ -1386,7 +1386,7 @@ HR-система ────────┘
 
 </details>
 
-**16. В чем разница Anchor Modeling и  Data Vault?**
+**17. В чем разница Anchor Modeling и  Data Vault?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
