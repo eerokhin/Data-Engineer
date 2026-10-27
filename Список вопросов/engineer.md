@@ -1296,7 +1296,7 @@ HR-система ────────┘
 
 </details>
 
-**15. В чем разница Data Vault 1.0 и Data Vault 2.0?**
+**17. В чем разница Data Vault 1.0 и Data Vault 2.0?**
 
 <details>
 <summary><strong>Ответ на вопрос</strong></summary>
