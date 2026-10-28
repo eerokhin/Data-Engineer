@@ -553,3 +553,8 @@ with DAG(
 Проверить почтовый ящик
 
 <img width="912" height="274" alt="image" src="https://github.com/user-attachments/assets/63a4da80-eb51-4a4d-ac76-e058eb52fe03" />
+
+
+**Конечная структура проекта**
+
+<img width="632" height="367" alt="image" src="https://github.com/user-attachments/assets/e3135e47-a108-41c7-8c14-0ba8d6a60a99" />
