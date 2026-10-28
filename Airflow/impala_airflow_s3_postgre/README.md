@@ -189,6 +189,10 @@ docker run --rm --network quickstart-network apache/impala:4.5.3-impala_quicksta
 
 <img width="885" height="698" alt="image" src="https://github.com/user-attachments/assets/e6ff0767-d560-4b38-9918-903b769553e1" />
 
+Добавить джарник
+
+<img width="825" height="419" alt="image" src="https://github.com/user-attachments/assets/933f6cfa-325e-41e7-9db3-6cf99e710eeb" />
+
 В текущей рабочей конфигурации использовался JDBC-драйвер Cloudera Impala 2.6.42.1076.
 
 После настройки выполнить:
