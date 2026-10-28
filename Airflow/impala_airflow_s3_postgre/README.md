@@ -466,3 +466,89 @@ GitHub не должен содержать пароли, токены, секр
 - MinIO: https://min.io/docs/
 - DBeaver: https://dbeaver.io/
 
+## 12. Добавление почты, для рассылки уведомлений от Airflow
+
+1. Проверить настройки Яндекса
+
+1. Открой Яндекс ID.
+2. Перейди в раздел безопасности и проверь, создан ли пароль приложения для почтового клиента.
+3. Если не уверен, создай новый пароль приложения для почты. Используй именно его, а не обычный пароль от аккаунта.
+
+2. Проверь .env
+
+В `C:\Users\erohi\Desktop\de_infra\.env` должны быть такие переменные:
+
+```
+YANDEX_EMAIL=твой_полный_адрес@yandex.ru
+YANDEX_APP_PASSWORD=пароль_приложения
+ALERT_EMAIL=твой_полный_адрес@yandex.ru
+```
+
+Проверь следующее:
+
+- YANDEX_EMAIL — полный адрес почтового ящика, от имени которого отправляешь письма.
+- YANDEX_APP_PASSWORD — пароль приложения, скопированный из Яндекс ID.
+- Вокруг значений не нужны кавычки.
+- Не добавляй пробелы до или после =.
+- Если используешь собственный домен или почту организации, уточни, поддерживает ли этот ящик SMTP и разрешена ли отправка через smtp.yandex.ru.
+
+3. Включи доступ к почтовым программам
+
+Это важный шаг, который легко пропустить. В настройках Яндекс Почты:
+
+1. Открой Яндекс Почту.
+2. Перейди в Настройки → Все настройки → Почтовые программы.
+3. Включи доступ к почте через почтовые клиенты по протоколу IMAP и опцию «Пароли приложений и OAuth-токены».
+4. Сохрани изменения.
+
+Яндекс указывает эти разрешения и для сценария, когда почтовая программа используется только для отправки писем по SMTP.
+
+4. Не забыть добавить файл .env в .gitignore
+
+
+DAG для проверки работоспособности
+
+```python
+from datetime import datetime
+import os
+
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.utils.email import send_email
+
+
+def send_test_email():
+    recipient = os.getenv("ALERT_EMAIL")
+
+    if not recipient:
+        raise RuntimeError("Переменная ALERT_EMAIL не задана")
+
+    send_email(
+        to=recipient,
+        subject="[Airflow] Yandex SMTP test",
+        html_content="""
+        <h2>SMTP работает</h2>
+        <p>Тестовое письмо успешно отправлено из Apache Airflow.</p>
+        <p>Проект: hr_etl_monitoring</p>
+        """,
+    )
+
+    print(f"Тестовое письмо отправлено на {recipient}")
+
+
+with DAG(
+    dag_id="test_yandex_email",
+    start_date=datetime(2026, 1, 1),
+    schedule=None,
+    catchup=False,
+    tags=["test", "email"],
+) as dag:
+    send_test_email_task = PythonOperator(
+        task_id="send_test_email",
+        python_callable=send_test_email,
+    )
+```
+
+Проверить почтовый ящик
+
+<img width="912" height="274" alt="image" src="https://github.com/user-attachments/assets/63a4da80-eb51-4a4d-ac76-e058eb52fe03" />
