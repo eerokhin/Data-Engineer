@@ -187,6 +187,8 @@ docker run --rm --network quickstart-network apache/impala:4.5.3-impala_quicksta
 | Authentication | No Authentication |
 | Driver class | `com.cloudera.impala.jdbc.Driver` |
 
+<img width="885" height="698" alt="image" src="https://github.com/user-attachments/assets/e6ff0767-d560-4b38-9918-903b769553e1" />
+
 В текущей рабочей конфигурации использовался JDBC-драйвер Cloudera Impala 2.6.42.1076.
 
 После настройки выполнить:
