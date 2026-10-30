@@ -1483,10 +1483,88 @@ print(stats)
 
 <img width="363" height="345" alt="image" src="https://github.com/user-attachments/assets/569b13d9-67df-4dcc-8583-89712ef09b5d" />
 
- **GIL (Global Interpreter Lock)** — это глобальная блокировка интерпретатора Python (замок внутри CPython, обычный python), которая позволяет только одному потоку (`Thread`) одновременно выполнять Python-байткод в рамках одного процесса.
+ **GIL (Global Interpreter Lock)** — это глобальная блокировка интерпретатора Python (замок внутри CPython, того самого обычного python), которая позволяет только одному потоку (`Thread`) одновременно выполнять Python-байткод в рамках одного процесса.
 
- Правило простое, python код в какой то один момент выполняет только один код. Остальные
- 
+ Правило простое, python код в каждый момент выполняет только один поток. Остальные ждут (как один микрофон на всех, говорит только тот у кого он в руках, остальные ждут)
+
+ <img width="342" height="279" alt="image" src="https://github.com/user-attachments/assets/554dbf69-856e-4ec8-b0bf-f5ee0d5070ee" />
+
+ <img width="350" height="323" alt="image" src="https://github.com/user-attachments/assets/8a2a8dc5-9ac7-40bd-b602-2ea3eb83af39" />
+
+**Как работает ?**
+
+Поток держит GIL, выполняет свой код, примерно каждые 5 мс интерпретатор просит его отдать замок следующему.
+
+<img width="409" height="295" alt="image" src="https://github.com/user-attachments/assets/10ccc4ee-58a3-4a6c-8ec2-4844011c6d18" />
+
+А если поток чего то ждет, например читает файл, ходит в сеть или спит, он отпускает GIL сам.
+
+<img width="347" height="347" alt="image" src="https://github.com/user-attachments/assets/93383a5d-ad1a-44de-8b98-234d2b3731db" />
+
+**Зачем нужен такой замок?**
+
+У каждого объекта в python есть счетчик ссылок, сколько переменных на него смотрит, если счетчик дошел до нуля объект удаляется
+
+<img width="350" height="377" alt="image" src="https://github.com/user-attachments/assets/60597c22-348c-49e9-9d9d-9b6c82e6e43a" />
+
+Если два потока поменяют счетчик одновременно, можно удалить живой объект. GIL как раз решает это одним замком на все. Поэтому однопоточный python - быстрый.
+
+<img width="342" height="377" alt="image" src="https://github.com/user-attachments/assets/108644ba-7a52-4b1d-9669-8c8f0fe2ff4f" />
+
+**На практике**
+
+Задача на процессор, 4 раза посчитать большую сумму.
+
+Подряд получилось - 15 сек
+
+4 потока - 12 сек
+
+4 процесса отдельно - 4,5 сек
+
+То есть у каждого процесса, свой интерпретатор и свой GIL
+
+<img width="359" height="423" alt="image" src="https://github.com/user-attachments/assets/096d070a-fef6-419b-b25d-8fbcc108ee38" />
+
+Задача с ожиданием
+
+4 запроса по одной секунде.
+
+Подряд - 4 сек
+
+4 потока - 1 сек
+
+Пока один поток ждет, GIL работает на другого.
+
+<img width="338" height="349" alt="image" src="https://github.com/user-attachments/assets/7b908869-40d9-4255-bad9-9743e61896da" />
+
+**Правило для собеса**
+
+Тяжелые вычисления мы отдаем в процессы, тоесть в `Multiprocessing`.
+
+Ожидание сети или диска это потоки или `Asyncio`.
+
+В `NumPy` похожие библиотеки сами отпускают `GIL` внутри вычислений на `C`
+
+<img width="349" height="309" alt="image" src="https://github.com/user-attachments/assets/0e5574ef-063f-4b2e-b27a-27df72d95bb8" />
+
+**Ловушка**
+
+GIL не делает код потоко безопасным. Даже `x+=1` это несколько шагов.
+
+Прочитать, сложить, записать. Поток могут прервать по середине и обновление потеряется.
+
+<img width="360" height="380" alt="image" src="https://github.com/user-attachments/assets/2635bf20-29a5-4d26-b3bd-554c33c4bde0" />
+
+Для общих данных нужен `lock`.
+
+<img width="378" height="313" alt="image" src="https://github.com/user-attachments/assets/be15ce93-ccad-4c6f-a91e-35d1d9d27e3b" />
+
+**Итог**
+
+Из за GIL python код в потоках выполняется по очереди. Ждешь бери потоки, долго считаешь бери процессы.
+
+<img width="352" height="262" alt="image" src="https://github.com/user-attachments/assets/0cc8e811-1dba-4542-b2a1-df1da49f3c8b" />
+
 </details>
 
 **50. Почему поиск key в Python dict в среднем занимает O(1)?**
