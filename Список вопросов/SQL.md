@@ -2,10 +2,18 @@
 
 **1) Порядок выполнения SQL запроса?**
 
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+       
 from (Так же соединение JOIN), where, group by, having, select, window (оконная функция), distinct, order by, limit
+
+</details>
 
 **2) Отличие DROP, DELETE, TRUNCATE?**
 
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+       
 DELETE удаляет (частично или полностью) содержимое таблицы, после удаления всех строк посредством инструкции delete таблица продолжает существовать в базе данных. В Impala DELETE нет. 
 В Impala DELETE поддерживается только для Kudu-таблиц.
 
@@ -13,7 +21,12 @@ DROP полностью удаляет таблицу: данные; струк�
 
 TRUNCATE полностью очищает таблицу. Удаляются все строки. Структура таблицы сохраняется.
 
+</details>
+
 **3) Какие функции есть в SQL?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 Агрегатные	`COUNT`, `SUM`, `AVG`
 
@@ -27,8 +40,13 @@ TRUNCATE полностью очищает таблицу. Удаляются в
 
 Условные	`CASE WHEN`, `COALESCE`
 
+</details>
+
 **4)Как сделать накопительный итог в SQL?**
 
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+       
 <img width="718" height="288" alt="image" src="https://github.com/user-attachments/assets/63fd43f2-42e3-441d-b453-4e4b8fcdbb81" />
 
 Нарастающий итог (или кумулятивная сумма) 
@@ -45,7 +63,13 @@ SELECT *,
 SUM(salary) OVER(PARTITION BY department ORDER BY id) AS cumulative_sum
 FROM postgres.test.employees
 ```
+
+</details>
+
 **5) Какие будут результаты выполнения следующих SQL-запросов?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 1) MIN(id1)
 2) SUM(id1)
@@ -107,9 +131,19 @@ COUNT('id1') = 5. При использовании COUNT('id1') в качест
 
 COUNT(DISTINCT id1) = 2. COUNT(DISTINCT id1) подсчитывает уникальные значения в столбце id1. В данном случае уникальные значения — это 2 и 5.
 
+</details>
+
 **6) Отличия UNION(исключает дубликаты) и UNION ALL(не исключает)?**
 
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+</details>
+
 **7) Какое будет максимальное и минимальное количество строк при различных JOIN?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 `INNER`: минимальное - 0 (все значения разные), максимальное - N * N (в первой и во второй таблице все записи одинаковые);
 
@@ -125,7 +159,12 @@ COUNT(DISTINCT id1) = 2. COUNT(DISTINCT id1) подсчитывает уника
 
 Минимально 5, максимально 20 если все значения одинаковые(дубли), если все значения разные то максимум 4 + 5 = 9 строк. Если есть NULL, то NULL не равен NULL, поэтому такие строки не матчятся и попадают как несопоставленные.  
 
+</details>
+
 **8) Какие есть оконные функции ?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 `ROW_NUMBER()` — присваивает уникальный порядковый номер строкам внутри окна, без повторов, просто 1, 2, 3…
 
@@ -137,10 +176,20 @@ COUNT(DISTINCT id1) = 2. COUNT(DISTINCT id1) подсчитывает уника
 
 `LEAD()` — возвращает значение из следующей строки в рамках окна (используется для сравнения с будущим значением).
 
+</details>
+
 **9) В чем отличия `HAVING` и `WHERE`?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+</details>
 
 **10)Какие join есть, чем отличаются?**
 
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+      
 ```
 INNER JOIN
 
@@ -192,13 +241,23 @@ FROM table_A as A
 
 <img width="452" height="343" alt="image" src="https://github.com/user-attachments/assets/7e387b7c-acbc-4873-a004-b3184bf5ce02" />
 
+</details>
+
 **11) Назовите логические виды JOIN и для чего они нужны?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 Что именно мы хотим получить из таблиц, без привязки к способу выполнения. 
 
 `INNER` — только совпадения, `LEFT` — всё слева , `RIGHT` — всё справа, `FULL` — всё, `CROSS` — все комбинации, `SELF` — таблица сама с собой
 
+</details>
+
 **12) Назовите физические виды JOIN и их принцип работы?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
 Как именно СУБД выполняет соединение на уровне алгоритмов.
 
@@ -208,4 +267,11 @@ FROM table_A as A
 
 `Sort-Merge Join` - Сначала обе таблицы сортируются, затем объединяются как два отсортированных списка.
 
+</details>
+
 **13) В чем разница EXPLAIN и EXPLAIN ANALYZE?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+
+</details>
