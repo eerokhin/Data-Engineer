@@ -23,7 +23,7 @@ INSERT новых данных в таблицу источник
        orders_raw
       (исходная таблица)
              |
-             | INSERT новых данных
+             | 
              v
      Materialized View
        (SQL-запрос)
