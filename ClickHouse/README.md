@@ -10,6 +10,8 @@ Materialized View позволяет автоматически выполнят
 
 Для этого можно использовать Materialized View.
 
+<img width="1560" height="822" alt="a168f04f59df0ba4af78ea1a8908bea6" src="https://github.com/user-attachments/assets/adf14f6b-c82c-4922-a1d8-9d031bc3fd1d" />
+
 ## 2. Как работает Materialized View
 
 Общая схема:
