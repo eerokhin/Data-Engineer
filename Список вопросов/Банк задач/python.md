@@ -4,7 +4,7 @@
 
 ---
 
-## Задача с собеседования в ВТБ
+### Задача с собеседования в ВТБ
 
 <details>
 <summary>Задача</summary>
@@ -55,10 +55,11 @@ print(items)
 
 </details>
 
----
+### Задача с собеседования в банк
 
-## Задача с собеседования в банк
-
+<details>
+<summary>Задача</summary>
+  
 Добавление элементов в список
 
 **Условие**
@@ -97,9 +98,6 @@ print(sequence_3)
 # ['first', 'second', 'third', 'fourth']
 ```
 
-<details>
-<summary>Решение</summary>
-  
 ```python
 def add_element(new_element, init_sequence=None):
     '''
@@ -133,10 +131,12 @@ print(sequence_3)
 # ['first', 'second', 'third', 'fourth']
 
 ```
-
 </details>
 
 ## Задача с собеседования на 350к
+
+<details>
+<summary>Задача</summary>
 
 Поиск `n-го` параграфа в текстовом файле. Есть файл `/file_with_paragraphs.txt` с текстом, разбитым на параграфы. 
 Каждый параграф состоит из одной или нескольких строк. Параграфы разделены строкой, состоящей только из специальных символов `@`.
@@ -154,9 +154,6 @@ print(sequence_3)
 Третий параграф.
 ```
 
-<details>
-<summary>Решение</summary>
-
 ```python  
 def par_search(file_path: str, n: int) -> None:
     if n <= 0:
@@ -171,6 +168,5 @@ def par_search(file_path: str, n: int) -> None:
 file_path = "C:/Users/erohi/Desktop/test/example.txt"
 par_search(file_path, 1)
 ```
-
 </details>
 
