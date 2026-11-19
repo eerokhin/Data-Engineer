@@ -156,7 +156,7 @@ print(sequence_3)
 Третий параграф.
 ```
 
-Решение
+**Решение**
 
 ```python  
 def par_search(file_path: str, n: int) -> None:
@@ -174,3 +174,54 @@ par_search(file_path, 1)
 ```
 </details>
 
+### Задача на словарь
+
+<details>
+<summary>Задача</summary>
+
+**Условие**
+
+Есть список заказов:
+
+```python
+orders = [
+          {"order_id": 1, "customer_id": 101, "amount": 500},
+          {"order_id": 2, "customer_id": 102, "amount": 1200},
+          {"order_id": 3, "customer_id": 101, "amount": 800},
+          {"order_id": 4, "customer_id": 103, "amount": 300},
+          {"order_id": 5, "customer_id": 102, "amount": 700},
+          {"order_id": 6, "customer_id": 101, "amount": 400},
+          ]
+```
+
+Задание: напиши функцию, которая считает общую сумму заказов для каждого клиента.
+
+Ожидаемый результат: `{101: 1700, 102: 1900, 103: 300}`
+
+Ограничения:
+- Используй стандартный Python.
+- Не используй pandas.
+- Используй словарь и цикл.
+- Решение оформи в виде функции.
+
+Дополнительный вопрос: что вернёт функция, если список заказов будет пустым?
+
+**Решение**
+
+```python
+def my_func(orders):
+    result = {}
+
+    for order in orders:
+        customer_id = order["customer_id"]
+        amount = order["amount"]
+
+        if customer_id in result:
+            result[customer_id] += amount
+        else:
+            result[customer_id] = amount
+
+    return result
+```
+  
+</details>
