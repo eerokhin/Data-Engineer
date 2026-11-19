@@ -210,18 +210,15 @@ orders = [
 
 ```python
 def my_func(orders):
-    result = {}
+    new_dict = {}
 
-    for order in orders:
-        customer_id = order["customer_id"]
-        amount = order["amount"]
-
-        if customer_id in result:
-            result[customer_id] += amount
+    for i in orders:
+        if i["customer_id"] in new_dict:
+            new_dict[i["customer_id"]] += i["amount"]
         else:
-            result[customer_id] = amount
+            new_dict[i["customer_id"]] = i["amount"]
 
-    return result
+    return new_dict
 ```
   
 </details>
