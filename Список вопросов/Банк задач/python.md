@@ -98,6 +98,8 @@ print(sequence_3)
 # ['first', 'second', 'third', 'fourth']
 ```
 
+**Решение**
+
 ```python
 def add_element(new_element, init_sequence=None):
     '''
@@ -133,7 +135,7 @@ print(sequence_3)
 ```
 </details>
 
-## Задача с собеседования на 350к
+### Задача с собеседования на 350к
 
 <details>
 <summary>Задача</summary>
