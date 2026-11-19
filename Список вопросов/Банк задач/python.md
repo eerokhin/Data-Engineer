@@ -154,6 +154,8 @@ print(sequence_3)
 Третий параграф.
 ```
 
+Решение
+
 ```python  
 def par_search(file_path: str, n: int) -> None:
     if n <= 0:
