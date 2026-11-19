@@ -6,11 +6,11 @@
 
 ## Задача с собеседования в ВТБ
 
+<details>
+<summary>Задача</summary>
+
 Что выведет код?
 
-<details>
-<summary>Решение</summary>
-  
 ```python
 a = "2"
 b = "6"
