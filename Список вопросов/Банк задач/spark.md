@@ -62,3 +62,50 @@ res.show()
 ```
 
 </details>
+
+
+### PySpark — window spec
+
+<details>
+<summary>Задача</summary>
+
+**Условие**
+
+Есть DataFrame с историей изменений сотрудников:
+
+```python
+from pyspark.sql import functions as F
+from pyspark.sql.window import Window
+
+data = [
+    (1, "Иван", "Moscow", "2026-11-18 10:00:00"),
+    (1, "Иван", "SPB", "2026-11-19 12:00:00"),
+    (2, "Петр", "Kazan", "2026-11-18 09:00:00"),
+    (2, "Петр", "Moscow", "2026-11-19 15:00:00"),
+    (3, "Анна", "Moscow", "2026-11-18 11:00:00"),
+    (3, "Анна", "Moscow", "2026-11-19 08:00:00"),
+]
+
+columns = ["employee_id", "name", "city", "updated_at"]
+df = spark.createDataFrame(data, columns)
+```
+
+Для каждого сотрудника необходимо оставить только последнюю запись по updated_at.
+
+Ожидаемый результат:
+
+```text
+employee_id	name	city	updated_at
+1	Иван	SPB	2026-11-19 12:00:00
+2	Петр	Moscow	2026-11-19 15:00:00
+3	Анна	Moscow	2026-11-19 08:00:00
+```
+
+**Решение**
+
+```python
+window_spec = (Window.partitionBy("employee_id").orderBy(F.col("updated_at").desc()))
+df_res = df.withColumn("row_num", F.row_number().over(window_spec)).where(F.col("row_num") == 1).select('employee_id', 'name', 'city', 'updated_at')
+df_res.show(10)
+```
+</details>
