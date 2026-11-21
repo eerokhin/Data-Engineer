@@ -353,6 +353,13 @@ WHERE NOT EXISTS (
     FROM employees m
     WHERE m.manager_id = e.id
 );
+
+/*2 Вариант*/
+SELECT e.name
+FROM employees e
+LEFT JOIN employees m
+    ON m.manager_id = e.id
+WHERE m.id IS NULL;
 ```
 
 ## 3. Как работает проверка
