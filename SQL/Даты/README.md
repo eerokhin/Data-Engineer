@@ -204,8 +204,11 @@ SELECT TO_CHAR(TIMESTAMP '2026-11-03 17:50:00', 'HH24:MI');
 
 **Пример 2**
 
+Было
+
 <img width="442" height="103" alt="image" src="https://github.com/user-attachments/assets/3431d626-dc83-4503-a28b-b29f33f854be" />
 
+Запрос
 
 ```sql
 SELECT
@@ -214,6 +217,8 @@ SELECT
     TO_CHAR(time_in, 'HH24:MI, FMDD.FMMM') AS flight_time
 FROM Trip
 ```
+
+Стало
 
 <img width="194" height="118" alt="image" src="https://github.com/user-attachments/assets/415f283a-0810-4b2d-898d-3ac1c133acdc" />
 
