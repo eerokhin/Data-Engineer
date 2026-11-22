@@ -169,6 +169,56 @@ SELECT '2025-01-24'::date + INTERVAL '1 month';
 2025-02-24
 ```
 
+# TO_CHAR
+
+`TO_CHAR()` преобразует дату, время или число в строку (TEXT) по заданному формату.
+
+`TO_CHAR(value, format)`
+
+`value` — исходное значение (дата, время, timestamp или число).
+
+`format` — шаблон, определяющий, как будет выглядеть результат.
+
+```text
+Формат	      Значение	Пример
+YYYY	        Год	2026
+MM	          Месяц с ведущим нулём	03
+DD	          День с ведущим нулём	03
+FMDD	        День без ведущего нуля	3
+FMMM	        Месяц без ведущего нуля	3
+HH24	        Часы в 24-часовом формате	17
+HH12	        Часы в 12-часовом формате	05
+MI	          Минуты	50
+SS	          Секунды	30
+
+FM (Fill Mode) убирает лишние пробелы и ведущие нули у числовых элементов формата.
+```
+
+**Пример**
+
+```sql
+Исходное значение: TIMESTAMP '2026-11-03 17:50:00'
+Только время:
+SELECT TO_CHAR(TIMESTAMP '2026-11-03 17:50:00', 'HH24:MI');
+-- 17:50
+```
+
+**Пример 2**
+
+<img width="442" height="103" alt="image" src="https://github.com/user-attachments/assets/3431d626-dc83-4503-a28b-b29f33f854be" />
+
+
+```sql
+SELECT
+    TO_CHAR(time_out, 'HH24:MI, FMDD.FMMM')
+    || ' - ' ||
+    TO_CHAR(time_in, 'HH24:MI, FMDD.FMMM') AS flight_time
+FROM Trip
+```
+
+<img width="194" height="118" alt="image" src="https://github.com/user-attachments/assets/415f283a-0810-4b2d-898d-3ac1c133acdc" />
+
+
 # Получить текущий месяц
 
 Сегодня 27.01.2025 пример работы функции
@@ -207,7 +257,7 @@ SELECT
      3 |      30
 ```
 
-# **Пример**
+# Пример
 
 ```
 SELECT CAST('2025-05-27' AS timestamp) AS cast_col_timestmp,
