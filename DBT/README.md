@@ -1107,6 +1107,10 @@ TOTAL=35
 - [dbt Snapshots](https://docs.getdbt.com/docs/build/snapshots)
 - [dbt Commands](https://docs.getdbt.com/reference/dbt-commands)
 
+## Мои проекты
+
+- [Подробна разобрана теория и примеры](https://github.com/eerokhin/dbt-duckdb)
+- [Пример Lakehouse](https://github.com/eerokhin/trino-iceberg-lab)
 ---
 
 **Главная мысль:** dbt — это инструмент управления SQL-преобразованиями в аналитическом хранилище. Он превращает набор SQL-запросов в структурированный проект с зависимостями, тестами, документацией и контролируемым процессом сборки данных.
