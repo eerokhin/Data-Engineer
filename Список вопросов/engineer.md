@@ -2366,8 +2366,267 @@ CREATE TABLE employees (
 
 </details>
 
-Как сделать загрузку идемпотентной?
+**28. Как сделать загрузку идемпотентной?**
 
-Как обрабатывать поздние данные?
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
 
-Что такое data lineage?
+# Идемпотентная загрузка данных в Airflow
+
+## 1. Условие задачи
+
+Представим, что у нас есть интернет-магазин.
+
+В PostgreSQL хранятся:
+- `raw_orders` — исходные заказы.
+- `stg_orders` — подготовленные данные.
+- `dm_orders` — целевая аналитическая витрина.
+
+Каждый день Airflow загружает в витрину заказы за предыдущий день.
+
+Например, 25 ноября DAG обрабатывает период с 24 ноября 00:00 включительно до 25 ноября 00:00 не включительно.
+
+## 2. Создаём исходную таблицу
+
+```sql
+DROP TABLE IF EXISTS raw_orders;
+
+CREATE TABLE raw_orders (
+    order_id INT,
+    customer_id INT,
+    amount NUMERIC(10, 2),
+    order_date TIMESTAMP
+);
+```
+
+Добавляем тестовые данные:
+
+```sql
+INSERT INTO raw_orders VALUES
+(1, 101, 1500, '2025-11-23 10:00:00'),
+(2, 102, 2500, '2025-11-23 12:00:00'),
+(3, 103, 3000, '2025-11-24 09:00:00'),
+(4, 104, 4500, '2025-11-24 14:00:00'),
+(5, 105, 2000, '2025-11-25 08:00:00');
+```
+
+## 3. Создаём staging
+
+```sql
+DROP TABLE IF EXISTS stg_orders;
+
+CREATE TABLE stg_orders (
+    order_id INT,
+    customer_id INT,
+    amount NUMERIC(10, 2),
+    order_date TIMESTAMP
+);
+```
+
+Для примера перенесём исходные данные в staging:
+
+```sql
+INSERT INTO stg_orders
+SELECT *
+FROM raw_orders;
+```
+
+В реальном проекте staging может наполняться отдельной ETL-задачей.
+
+## 4. Создаём целевую витрину
+
+```sql
+DROP TABLE IF EXISTS dm_orders;
+
+CREATE TABLE dm_orders (
+    order_id INT,
+    customer_id INT,
+    amount NUMERIC(10, 2),
+    order_date TIMESTAMP
+);
+```
+
+На этом этапе витрина пустая.
+
+## 5. Реализуем загрузку в Airflow
+
+Создадим DAG из двух задач:
+
+1. `delete_old_data` — удаляет данные за обрабатываемый период.
+2. `insert_new_data` — загружает актуальные данные за этот же период.
+
+```python
+from datetime import datetime
+
+from airflow import DAG
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+
+
+with DAG(
+    dag_id="orders_idempotent_load",
+    start_date=datetime(2025, 11, 1),
+    schedule="@daily",
+    catchup=False,
+) as dag:
+
+    delete_old_data = SQLExecuteQueryOperator(
+        task_id="delete_old_data",
+        conn_id="postgres",
+        sql="""
+            DELETE FROM dm_orders
+            WHERE order_date >= '{{ data_interval_start }}'
+              AND order_date < '{{ data_interval_end }}';
+        """
+    )
+
+    insert_new_data = SQLExecuteQueryOperator(
+        task_id="insert_new_data",
+        conn_id="postgres",
+        sql="""
+            INSERT INTO dm_orders
+            SELECT *
+            FROM stg_orders
+            WHERE order_date >= '{{ data_interval_start }}'
+              AND order_date < '{{ data_interval_end }}';
+        """
+    )
+
+    delete_old_data >> insert_new_data
+```
+
+## 6. Первая загрузка
+
+Представим, что DAG обрабатывает 24 ноября.
+
+Airflow передаёт:
+
+```text
+data_interval_start = 2025-11-24 00:00:00
+data_interval_end   = 2025-11-25 00:00:00
+```
+
+После подстановки дат SQL выглядит так.
+
+Сначала выполняется DELETE:
+
+```sql
+DELETE FROM dm_orders
+WHERE order_date >= '2025-11-24 00:00:00'
+  AND order_date < '2025-11-25 00:00:00';
+```
+
+Поскольку витрина пустая, будет удалено 0 строк.
+
+Затем выполняется INSERT:
+
+```sql
+INSERT INTO dm_orders
+SELECT *
+FROM stg_orders
+WHERE order_date >= '2025-11-24 00:00:00'
+  AND order_date < '2025-11-25 00:00:00';
+```
+
+В витрину попадут два заказа:
+
+| order_id | customer_id | amount | order_date |
+|---:|---:|---:|---|
+| 3 | 103 | 3000 | 2025-11-24 09:00 |
+| 4 | 104 | 4500 | 2025-11-24 14:00 |
+
+## 7. Повторный запуск DAG
+
+Допустим, DAG запустился повторно за тот же интервал.
+
+Airflow снова передаст те же даты:
+
+```text
+2025-11-24 00:00:00
+2025-11-25 00:00:00
+```
+
+Снова выполнится DELETE:
+
+```sql
+DELETE FROM dm_orders
+WHERE order_date >= '2025-11-24 00:00:00'
+  AND order_date < '2025-11-25 00:00:00';
+```
+
+Удалятся два ранее загруженных заказа.
+
+После этого INSERT снова загрузит два заказа из staging.
+
+**Результат:** в витрине останутся те же две записи, а не четыре.
+
+## 8. Что если исходные данные изменились?
+
+Представим, что в исходной системе исправили сумму заказа №3 с 3000 на 3500.
+
+Обновляем исходную таблицу:
+
+```sql
+UPDATE raw_orders
+SET amount = 3500
+WHERE order_id = 3;
+```
+
+Для простоты обновим staging:
+
+```sql
+TRUNCATE TABLE stg_orders;
+
+INSERT INTO stg_orders
+SELECT *
+FROM raw_orders;
+```
+
+Теперь повторно запускаем DAG за 24 ноября.
+
+1. DELETE удаляет старые данные за 24 ноября.
+2. INSERT загружает обновлённые данные из staging.
+
+В результате в витрине:
+
+| order_id | customer_id | amount | order_date |
+|---:|---:|---:|---|
+| 3 | 103 | 3500 | 2025-11-24 09:00 |
+| 4 | 104 | 4500 | 2025-11-24 14:00 |
+
+Заказ №3 обновился, дубликат не появился.
+
+## 9. Главный принцип
+
+Идемпотентность обеспечивается не самим Airflow, а логикой SQL-загрузки.
+
+Airflow определяет временной интервал через `data_interval_start` и `data_interval_end`.
+
+SQL использует этот интервал, чтобы:
+1. Удалить старые данные за период.
+2. Загрузить полный актуальный набор данных за тот же период.
+
+При повторном запуске за тот же интервал результат не дублируется.
+
+**Важные условия:**
+- Staging должна содержать полный набор данных за обрабатываемый период.
+- Повторный запуск должен выполнять обе задачи: DELETE и INSERT.
+- Если DAG упадёт между DELETE и INSERT, данные за период временно исчезнут. Повторный запуск восстановит их, если staging сохранилась.
+- Для защиты от промежуточного отсутствия данных DELETE и INSERT можно выполнять в одной транзакции.
+
+В Impala для обеспечения идемпотентности можно использовать INSERT OVERWRITE.
+
+</details>
+
+**29. Как обрабатывать поздние данные?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+  
+</details>
+
+**30. Что такое data lineage?**
+
+<details>
+<summary><strong>Ответ на вопрос</strong></summary>
+  
+</details>
