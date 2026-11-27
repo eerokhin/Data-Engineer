@@ -1109,7 +1109,7 @@ TOTAL=35
 
 ## Мои проекты
 
-- [Подробна разобрана теория и примеры](https://github.com/eerokhin/dbt-duckdb)
+- [Подробно разобрана теория и примеры](https://github.com/eerokhin/dbt-duckdb)
 - [Пример Lakehouse](https://github.com/eerokhin/trino-iceberg-lab)
 ---
 
