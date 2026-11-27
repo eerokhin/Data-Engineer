@@ -447,3 +447,134 @@ WHERE m.manager_id = 3;
 
 **Когда применять:** `NOT EXISTS` особенно полезен для поиска записей, которым не соответствуют другие записи. Например, клиентов без заказов, товаров без продаж или сотрудников без подчинённых.
 </details> 
+
+##  Топ 3 самых высоких зарплат по каждому департаменту (WB)
+
+<details>
+<summary>Задача</summary>
+    
+# ROW_NUMBER(), RANK(), DENSE_RANK() в SQL
+
+Оконные функции ранжирования позволяют присваивать порядковые номера строкам внутри группы.
+
+Рассмотрим пример: необходимо вывести три самые высокие зарплаты по каждому департаменту, а также разобраться в различиях между `ROW_NUMBER()`, `RANK()` и `DENSE_RANK()`.
+
+## 1. Исходные данные
+
+Таблица `employees`:
+
+| employee_id | department_id | salary |
+|---:|---:|---:|
+| 1 | 1 | 50000 |
+| 2 | 2 | 60000 |
+| 3 | 1 | 55000 |
+| 4 | 2 | 52000 |
+| 5 | 1 | 55000 |
+| 6 | 2 | 52000 |
+| 7 | 1 | 48000 |
+| 8 | 2 | 49000 |
+| 9 | 1 | 45000 |
+| 10 | 2 | 45000 |
+
+Таблица `departments`:
+
+| department_id | department_name |
+|---:|---|
+| 1 | Sales |
+| 2 | Marketing |
+
+## 2. ROW_NUMBER(), RANK(), DENSE_RANK()
+
+```sql
+SELECT
+    employee_id,
+    department_id,
+    salary,
+    ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) AS row_num,
+    RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank_num,
+    DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS dense_rank_num
+FROM employees;
+```
+
+Результат:
+
+| employee_id | department_id | salary | row_num | rank_num | dense_rank_num |
+|---:|---:|---:|---:|---:|---:|
+| 3 | 1 | 55000 | 1 | 1 | 1 |
+| 5 | 1 | 55000 | 2 | 1 | 1 |
+| 1 | 1 | 50000 | 3 | 3 | 2 |
+| 7 | 1 | 48000 | 4 | 4 | 3 |
+| 9 | 1 | 45000 | 5 | 5 | 4 |
+| 2 | 2 | 60000 | 1 | 1 | 1 |
+| 4 | 2 | 52000 | 2 | 2 | 2 |
+| 6 | 2 | 52000 | 3 | 2 | 2 |
+| 8 | 2 | 49000 | 4 | 4 | 3 |
+| 10 | 2 | 45000 | 5 | 5 | 4 |
+
+- **ROW_NUMBER()** — каждой строке присваивает уникальный номер, даже если зарплаты одинаковые.
+- **RANK()** — одинаковые зарплаты получают одинаковый ранг, следующие номера пропускаются.
+- **DENSE_RANK()** — одинаковые зарплаты получают одинаковый ранг, но пропусков нет.
+
+## 3. Практическая задача
+
+Необходимо вывести три самые высокие уникальные зарплаты по каждому департаменту с названием департамента.
+
+SQL-запрос:
+
+```sql
+WITH ranked_salaries AS (
+    SELECT
+        d.department_name,
+        e.salary,
+        DENSE_RANK() OVER (
+            PARTITION BY e.department_id
+            ORDER BY e.salary DESC
+        ) AS rn
+    FROM employees e
+    JOIN departments d
+        ON e.department_id = d.department_id
+)
+SELECT DISTINCT
+    department_name,
+    salary
+FROM ranked_salaries
+WHERE rn <= 3
+ORDER BY department_name, salary DESC;
+```
+
+## 4. Результат
+
+| department_name | salary |
+|---|---:|
+| Marketing | 60000 |
+| Marketing | 52000 |
+| Marketing | 49000 |
+| Sales | 55000 |
+| Sales | 50000 |
+| Sales | 48000 |
+
+## 5. Как работает решение
+
+1. `JOIN` — соединяет сотрудников с названиями департаментов.
+2. `PARTITION BY department_id` — разделяет зарплаты по департаментам.
+3. `ORDER BY salary DESC` — сортирует зарплаты от большей к меньшей.
+4. `DENSE_RANK()` — присваивает одинаковым зарплатам одинаковый ранг без пропусков.
+5. `WHERE rn <= 3` — оставляет три самых высоких уникальных значения зарплаты.
+6. `DISTINCT` — убирает дублирующиеся строки.
+
+**Главное отличие оконных функций:**
+
+| Функция | Результат для зарплат 55000, 55000, 50000 |
+|---|---|
+| ROW_NUMBER() | 1, 2, 3 |
+| RANK() | 1, 1, 3 |
+| DENSE_RANK() | 1, 1, 2 |
+
+**Важно:**
+- `ROW_NUMBER()` — топ-3 сотрудника.
+- `RANK()` — топ-3 позиции рейтинга с учётом пропусков.
+- `DENSE_RANK()` — топ-3 уникальные зарплаты.
+
+`PARTITION BY` разделяет строки на группы, но не схлопывает их, в отличие от `GROUP BY`.
+
+</details> 
